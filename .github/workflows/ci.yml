@@ -55,7 +55,13 @@ jobs:
             -reports:TestResults/**/coverage.cobertura.xml `
             -targetdir:TestResults/Reports `
             -reporttypes:"Html;lcov;Cobertura" `
-
+      
+      - name: Upload Coverage to Coveralls
+        uses: coverallsapp/github-action@v2
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path-to-lcov: TestResults/Reports/lcov.info
+          
       - name: Upload Test Coverage Report
         uses: actions/upload-artifact@v4
         with:
