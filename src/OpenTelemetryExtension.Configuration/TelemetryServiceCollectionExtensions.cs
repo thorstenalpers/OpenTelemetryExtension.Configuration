@@ -101,10 +101,6 @@ public static class TelemetryServiceCollectionExtensions
         configure(options);
 
         Validator.ValidateObject(options, new ValidationContext(options), validateAllProperties: true);
-        if (options.Endpoint is null)
-        {
-            throw new ValidationException($"{nameof(TelemetryOptions.Endpoint)} is required.");
-        }
 
         ConfigureTelemetry(services, options);
         return services;
