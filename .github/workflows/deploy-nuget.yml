@@ -74,7 +74,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         tag_name: "v${{ env.VERSION }}"
-        release_name: "Finance.NET ${{ env.VERSION }}"
+        release_name: "OpenTelemetryExtension.Configuration ${{ env.VERSION }}"
         body_path: ./release-notes/v${{ env.VERSION }}.md
 
     - name: Add GitHub Packages NuGet Source
