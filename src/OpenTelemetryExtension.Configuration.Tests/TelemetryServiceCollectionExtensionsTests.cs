@@ -35,8 +35,12 @@ namespace OpenTelemetryExtension.Configuration.Tests
                 ["Telemetry:Endpoint"] = "http://localhost:4318",
             };
             if (overrides is not null)
+            {
                 foreach (var kv in overrides)
+                {
                     values[kv.Key] = kv.Value;
+                }
+            }
 
             return BuildConfig(values);
         }
