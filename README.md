@@ -8,7 +8,7 @@
 [![CI Tests](https://github.com/thorstenalpers/OpenTelemetryExtension.Configuration/actions/workflows/ci.yml/badge.svg)](https://github.com/thorstenalpers/OpenTelemetryExtension.Configuration/actions/workflows/ci.yml)
 [![Star this repo](https://img.shields.io/github/stars/thorstenalpers/OpenTelemetryExtension.Configuration.svg?style=social&label=Star&maxAge=60)](https://github.com/thorstenalpers/OpenTelemetryExtension.Configuration)
 
-An opinionated, zero-boilerplate OpenTelemetry setup for ASP.NET Core — tracing, metrics and logging with a single `AddTelemetry()` call.
+Configurable OpenTelemetry setup for ASP.NET Core via appsettings.json — tracing, metrics and logging with a single AddTelemetry() call.
 
 ---
 
