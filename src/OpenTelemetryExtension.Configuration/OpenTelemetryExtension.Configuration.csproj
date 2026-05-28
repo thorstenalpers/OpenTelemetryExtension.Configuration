@@ -1,0 +1,54 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+	<PropertyGroup>
+		<TargetFramework>netstandard2.1</TargetFramework>
+		<Nullable>enable</Nullable>
+		<Version>1.0.0</Version>
+		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+		<GenerateDocumentationFile>true</GenerateDocumentationFile>
+		<LangVersion>latest</LangVersion>
+		<EnforceCodeStyleInBuild>True</EnforceCodeStyleInBuild>
+		<AnalysisLevel>latest</AnalysisLevel>
+		<EnableNETAnalyzers>True</EnableNETAnalyzers>
+
+		<PackageId>OpenTelemetryExtension.Configuration</PackageId>
+		<Authors>Thorsten Alpers</Authors>
+		<Copyright>Copyright 2026</Copyright>
+		<Description>Opinionated OpenTelemetry setup for ASP.NET Core — tracing, metrics and logging via a single AddTelemetry() call.</Description>
+		<PackageTags>OpenTelemetry;Otel;Traces;Metrics;Logs;Logging</PackageTags>
+		<PackageProjectUrl>https://github.com/thorstenalpers/OpenTelemetryExtension.Configuration</PackageProjectUrl>
+		<RepositoryUrl>https://github.com/thorstenalpers/OpenTelemetryExtension.Configuration</RepositoryUrl>
+		<PackageLicenseExpression>MIT</PackageLicenseExpression>
+		<PackageIcon>logo.png</PackageIcon>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.15.3" />
+		<PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.15.3" />
+		<PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.15.2" />
+		<PackageReference Include="OpenTelemetry.Instrumentation.Http" Version="1.15.1" />
+		<PackageReference Include="OpenTelemetry.Instrumentation.Runtime" Version="1.15.1" />
+		<PackageReference Include="OpenTelemetry.Instrumentation.SqlClient" Version="1.15.2" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<None Include="./logo.png" Visible="false">
+			<Pack>true</Pack>
+			<PackagePath>/logo.png</PackagePath>
+		</None>
+		<None Include="../../README.md" Visible="false">
+			<Pack>true</Pack>
+			<PackagePath>/README.md</PackagePath>
+		</None>
+		<None Include="../../LICENSE" Visible="false">
+			<Pack>true</Pack>
+			<PackagePath>/LICENSE</PackagePath>
+		</None>
+		<None Include="../../THIRD_PARTY_LICENSES.txt" Visible="false">
+			<Pack>true</Pack>
+			<PackagePath>/THIRD_PARTY_LICENSES.txt</PackagePath>
+		</None>
+	</ItemGroup>
+
+</Project>
