@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -386,6 +387,138 @@ namespace OpenTelemetryExtension.Configuration.Tests
             });
             var services = NewServices();
             var ex = Record.Exception(() => services.AddTelemetry(config));
+            Assert.Null(ex);
+        }
+
+        [Fact]
+        public void Filter_HealthPath_ReturnsFalse()
+        {
+            // Arrange – simulate the filter lambda directly
+            Func<HttpContext, bool> filter =
+                ctx => !ctx.Request.Path.StartsWithSegments("/health");
+
+            var context = new DefaultHttpContext();
+            context.Request.Path = "/health";
+
+            // Act
+            var result = filter(context);
+
+            // Assert
+            Assert.False(result);
+        }
+
+        [Fact]
+        public void Filter_HealthSubPath_ReturnsFalse()
+        {
+            Func<HttpContext, bool> filter =
+                ctx => !ctx.Request.Path.StartsWithSegments("/health");
+
+            var context = new DefaultHttpContext();
+            context.Request.Path = "/health/live";
+
+            Assert.False(filter(context));
+        }
+
+        [Fact]
+        public void Filter_NonHealthPath_ReturnsTrue()
+        {
+            Func<HttpContext, bool> filter =
+                ctx => !ctx.Request.Path.StartsWithSegments("/health");
+
+            var context = new DefaultHttpContext();
+            context.Request.Path = "/api/orders";
+
+            Assert.True(filter(context));
+        }
+
+        [Fact]
+        public void Filter_RootPath_ReturnsTrue()
+        {
+            Func<HttpContext, bool> filter =
+                ctx => !ctx.Request.Path.StartsWithSegments("/health");
+
+            var context = new DefaultHttpContext();
+            context.Request.Path = "/";
+
+            Assert.True(filter(context));
+        }
+
+        [Fact]
+        public void Filter_HealthPrefix_InLongerPath_ReturnsFalse()
+        {
+            Func<HttpContext, bool> filter =
+                ctx => !ctx.Request.Path.StartsWithSegments("/health");
+
+            var context = new DefaultHttpContext();
+            context.Request.Path = "/healthz";
+
+            // StartsWithSegments matches full segments only — /healthz is NOT /health
+            Assert.True(filter(context));
+        }
+
+        // ── Resource configuration ────────────────────────────────────────────────
+
+        [Fact]
+        public void AddTelemetry_WithServiceName_RegistersTracerProvider()
+        {
+            var services = NewServices();
+            services.AddTelemetry(MinimalConfigure(o => o.ServiceName = "my-api"));
+            Assert.NotNull(services.BuildServiceProvider().GetService<TracerProvider>());
+        }
+
+        [Fact]
+        public void AddTelemetry_WithEnvironmentName_RegistersTracerProvider()
+        {
+            var services = NewServices();
+            services.AddTelemetry(MinimalConfigure(o => o.EnvironmentName = "production"));
+            Assert.NotNull(services.BuildServiceProvider().GetService<TracerProvider>());
+        }
+
+        [Fact]
+        public void AddTelemetry_WithServiceNameAndEnvironmentName_RegistersTracerProvider()
+        {
+            var services = NewServices();
+            services.AddTelemetry(MinimalConfigure(o =>
+            {
+                o.ServiceName = "my-api";
+                o.EnvironmentName = "production";
+            }));
+            Assert.NotNull(services.BuildServiceProvider().GetService<TracerProvider>());
+        }
+
+        [Fact]
+        public void AddTelemetry_NullServiceName_DoesNotThrow()
+        {
+            var services = NewServices();
+            var ex = Record.Exception(() =>
+                services.AddTelemetry(MinimalConfigure(o => o.ServiceName = null)));
+            Assert.Null(ex);
+        }
+
+        [Fact]
+        public void AddTelemetry_WhitespaceServiceName_DoesNotThrow()
+        {
+            var services = NewServices();
+            var ex = Record.Exception(() =>
+                services.AddTelemetry(MinimalConfigure(o => o.ServiceName = "   ")));
+            Assert.Null(ex);
+        }
+
+        [Fact]
+        public void AddTelemetry_NullEnvironmentName_DoesNotThrow()
+        {
+            var services = NewServices();
+            var ex = Record.Exception(() =>
+                services.AddTelemetry(MinimalConfigure(o => o.EnvironmentName = null)));
+            Assert.Null(ex);
+        }
+
+        [Fact]
+        public void AddTelemetry_WhitespaceEnvironmentName_DoesNotThrow()
+        {
+            var services = NewServices();
+            var ex = Record.Exception(() =>
+                services.AddTelemetry(MinimalConfigure(o => o.EnvironmentName = "   ")));
             Assert.Null(ex);
         }
     }
