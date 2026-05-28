@@ -47,7 +47,7 @@
 		</None>
 		<None Include="../../THIRD_PARTY_LICENSES.txt" Visible="false">
 			<Pack>true</Pack>
-			<PackagePath>/THIRD_PARTY_LICENSES.txt</PackagePath>
+			<PackagePath>/THIRD_PARTY_LICENSES.md</PackagePath>
 		</None>
 	</ItemGroup>
 

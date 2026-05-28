@@ -2,8 +2,10 @@
 
 [![.NET Standard 2.1](https://img.shields.io/badge/.NET%20Standard-2.1-blue)](#)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=thorstenalpers_Finance.NET&metric=alert_status)](https://sonarcloud.io/project/issues?issueStatuses=OPEN%2CCONFIRMED&id=thorstenalpers_Finance.NET)
 [![NuGet Version](https://img.shields.io/nuget/v/OpenTelemetryExtension.Configuration.svg)](https://www.nuget.org/packages/OpenTelemetryExtension.Configuration)
 [![NuGet Downloads](https://img.shields.io/nuget/dt/OpenTelemetryExtension.Configuration.svg)](https://www.nuget.org/packages/OpenTelemetryExtension.Configuration)
+[![Coverage Status](https://coveralls.io/repos/github/thorstenalpers/Finance.NET/badge.svg?branch=develop)](https://coveralls.io/github/thorstenalpers/Finance.NET?branch=develop)
 [![CI Tests](https://github.com/thorstenalpers/OpenTelemetryExtension.Configuration/actions/workflows/ci.yml/badge.svg)](https://github.com/thorstenalpers/OpenTelemetryExtension.Configuration/actions/workflows/ci.yml)
 [![Star this repo](https://img.shields.io/github/stars/thorstenalpers/OpenTelemetryExtension.Configuration.svg?style=social&label=Star&maxAge=60)](https://github.com/thorstenalpers/OpenTelemetryExtension.Configuration)
 
@@ -118,7 +120,8 @@ and the [sample project](./OpenTelemetryExtension.Configuration.Sample) for the 
 ```json
 {
   "Telemetry": {
-    "Endpoint": "http://localhost:18888"
+    "Endpoint": "http://localhost:18888",
+    "Protocol": "HttpProtobuf"
   }
 }
 ```
@@ -128,7 +131,8 @@ and the [sample project](./OpenTelemetryExtension.Configuration.Sample) for the 
 ```json
 {
   "Telemetry": {
-    "Endpoint": "http://localhost:4318"
+    "Endpoint": "http://localhost:4318",
+    "Protocol": "HttpProtobuf"
   }
 }
 ```
@@ -148,7 +152,8 @@ and the [sample project](./OpenTelemetryExtension.Configuration.Sample) for the 
 ```json
 {
   "Telemetry": {
-    "Endpoint": "http://localhost:30318"
+    "Endpoint": "http://localhost:30318",
+    "Protocol": "HttpProtobuf"
   }
 }
 ```
@@ -161,6 +166,7 @@ and the [sample project](./OpenTelemetryExtension.Configuration.Sample) for the 
 {
   "Telemetry": {
     "Endpoint": "http://localhost:3100/otlp",
+    "Protocol": "HttpProtobuf",
     "EnableTracing": false,
     "EnableMetrics": false
   }
@@ -173,6 +179,7 @@ and the [sample project](./OpenTelemetryExtension.Configuration.Sample) for the 
 {
   "Telemetry": {
     "Endpoint": "http://localhost:30117/api/default",
+    "Protocol": "HttpProtobuf",
     "Headers": "Authorization=Basic <base64>,stream-name=default"
   }
 }
