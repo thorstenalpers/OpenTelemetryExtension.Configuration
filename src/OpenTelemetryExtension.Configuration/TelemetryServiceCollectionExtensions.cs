@@ -1,7 +1,6 @@
 ﻿namespace OpenTelemetryExtension.Configuration;
 
 using System;
-using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Reflection;
 using Microsoft.Extensions.Configuration;
@@ -125,10 +124,7 @@ public static class TelemetryServiceCollectionExtensions
 
                 if (!string.IsNullOrWhiteSpace(options.EnvironmentName))
                 {
-                    resource.AddAttributes(new List<KeyValuePair<string, object>>
-                    {
-                        new KeyValuePair<string, object>("deployment.environment", options.EnvironmentName)
-                    });
+                    resource.AddAttributes([new("deployment.environment", options.EnvironmentName)]);
                 }
             });
 
