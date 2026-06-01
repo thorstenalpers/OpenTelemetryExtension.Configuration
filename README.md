@@ -1,6 +1,6 @@
 # OpenTelemetryExtension.Configuration
 
-[![.NET Standard 2.1](https://img.shields.io/badge/.NET%20Standard-2.1-blue)](#)
+[![.NET Standard 2.0](https://img.shields.io/badge/.NET%20Standard-2.0-blue)](#)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
 [![NuGet Version](https://img.shields.io/nuget/v/OpenTelemetryExtension.Configuration.svg)](https://www.nuget.org/packages/OpenTelemetryExtension.Configuration)
 [![NuGet Downloads](https://img.shields.io/nuget/dt/OpenTelemetryExtension.Configuration.svg)](https://www.nuget.org/packages/OpenTelemetryExtension.Configuration)
