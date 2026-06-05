@@ -5,7 +5,7 @@
 [![NuGet Downloads](https://img.shields.io/nuget/dt/OpenTelemetryExtension.Configuration.svg)](https://www.nuget.org/packages/OpenTelemetryExtension.Configuration)
 [![Coverage Status](https://coveralls.io/repos/github/thorstenalpers/OpenTelemetryExtension.Configuration/badge.svg?branch=develop)](https://coveralls.io/github/thorstenalpers/OpenTelemetryExtension.Configuration?branch=develop)
 [![CI](https://github.com/thorstenalpers/OpenTelemetryExtension.Configuration/actions/workflows/ci.yml/badge.svg)](https://github.com/thorstenalpers/OpenTelemetryExtension.Configuration/actions/workflows/ci.yml)
-[![Stars](https://badgen.net/github/stars/thorstenalpers/OpenTelemetryExtension.Configuration)](https://github.com/thorstenalpers/OpenTelemetryExtension.Configuration)
+[![Stars](https://img.shields.io/github/stars/thorstenalpers/OpenTelemetryExtension.Configuration?cacheSeconds=3600)](https://github.com/thorstenalpers/OpenTelemetryExtension.Configuration)
 
 Wire up OpenTelemetry tracing, metrics and logging in your ASP.NET Core app with a single call and a few lines of `appsettings.json`.
 
