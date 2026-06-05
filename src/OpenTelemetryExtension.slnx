@@ -3,9 +3,7 @@
     <File Path="../CODE_OF_CONDUCT.md" />
     <File Path="../CONTRIBUTING.md" />
     <File Path="../LICENSE" />
-    <File Path="../NOTICE.MD" />
     <File Path="../README.md" />
-    <File Path="../THIRD_PARTY_LICENSES.md" />
   </Folder>
   <Project Path="OpenTelemetryExtension.Configuration.Sample/OpenTelemetryExtension.Configuration.Sample.csproj" DefaultStartup="true" />
   <Project Path="OpenTelemetryExtension.Configuration/OpenTelemetryExtension.Configuration.csproj" />
