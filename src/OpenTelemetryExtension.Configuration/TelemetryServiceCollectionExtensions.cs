@@ -1,7 +1,8 @@
-﻿namespace OpenTelemetryExtension.Configuration;
+namespace OpenTelemetryExtension.Configuration;
 
 using System;
 using System.ComponentModel.DataAnnotations;
+using System.Linq;
 using System.Reflection;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -45,27 +46,22 @@ public static class TelemetryServiceCollectionExtensions
     /// </exception>
     public static IServiceCollection AddTelemetry(this IServiceCollection services, IConfiguration configuration)
     {
-        var options = configuration.GetSection(TelemetryOptions.SectionName).Get<TelemetryOptions>()
-            ?? throw new InvalidOperationException("Telemetry configuration missing.");
-
-        return services.AddTelemetry(o =>
+        var section = configuration.GetSection(TelemetryOptions.SectionName);
+        if (!section.Exists())
         {
-            o.Enabled = options.Enabled;
-            o.Endpoint = options.Endpoint;
-            o.Headers = options.Headers;
-            o.Protocol = options.Protocol;
-            o.ServiceName = options.ServiceName;
-            o.EnvironmentName = options.EnvironmentName;
-            o.EnableTracing = options.EnableTracing;
-            o.EnableMetrics = options.EnableMetrics;
-            o.EnableLogging = options.EnableLogging;
-            o.EnableAspNetCoreInstrumentation = options.EnableAspNetCoreInstrumentation;
-            o.EnableHttpClientInstrumentation = options.EnableHttpClientInstrumentation;
-            o.EnableSqlClientInstrumentation = options.EnableSqlClientInstrumentation;
-            o.EnableRuntimeInstrumentation = options.EnableRuntimeInstrumentation;
-            o.RecordExceptions = options.RecordExceptions;
-            o.ExcludeHealthChecks = options.ExcludeHealthChecks;
-        });
+            throw new InvalidOperationException($"Configuration section '{TelemetryOptions.SectionName}' is missing.");
+        }
+
+        var options = new TelemetryOptions();
+        section.Bind(options);
+
+        if (options.Enabled)
+        {
+            Validator.ValidateObject(options, new ValidationContext(options), validateAllProperties: true);
+        }
+
+        ConfigureTelemetry(services, options);
+        return services;
     }
 
     /// <summary>
@@ -112,6 +108,9 @@ public static class TelemetryServiceCollectionExtensions
             return;
         }
 
+        // Endpoint is [Required] and validated before ConfigureTelemetry is reached.
+#pragma warning disable CS0618 // OtlpExportProtocol.Grpc is intentionally supported; warning only applies to netstandard2.0 without HttpClientFactory
+        var endpoint = options.Endpoint!;
         var serviceVersion = Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
 
         var builder = services.AddOpenTelemetry()
@@ -119,12 +118,17 @@ public static class TelemetryServiceCollectionExtensions
             {
                 if (!string.IsNullOrWhiteSpace(options.ServiceName))
                 {
-                    resource.AddService(serviceName: options.ServiceName, serviceVersion: serviceVersion);
+                    resource.AddService(serviceName: options.ServiceName!, serviceVersion: serviceVersion);
                 }
 
                 if (!string.IsNullOrWhiteSpace(options.EnvironmentName))
                 {
-                    resource.AddAttributes([new("deployment.environment", options.EnvironmentName)]);
+                    resource.AddAttributes([new("deployment.environment", options.EnvironmentName!)]);
+                }
+
+                if (options.ResourceAttributes.Count > 0)
+                {
+                    resource.AddAttributes(options.ResourceAttributes.Select(kv => new KeyValuePair<string, object>(kv.Key, kv.Value)));
                 }
             });
 
@@ -132,14 +136,16 @@ public static class TelemetryServiceCollectionExtensions
         {
             builder.WithTracing(tracing =>
             {
+                tracing.SetSampler(new ParentBasedSampler(new TraceIdRatioBasedSampler(options.SampleRatio)));
+
                 if (options.EnableAspNetCoreInstrumentation)
                 {
                     tracing.AddAspNetCoreInstrumentation(opt =>
                     {
                         opt.RecordException = options.RecordExceptions;
-                        if (options.ExcludeHealthChecks)
+                        if (options.ExcludedPaths.Length > 0)
                         {
-                            opt.Filter = ctx => !ctx.Request.Path.StartsWithSegments("/health");
+                            opt.Filter = ctx => !options.ExcludedPaths.Any(p => ctx.Request.Path.StartsWithSegments(p));
                         }
                     });
                 }
@@ -158,7 +164,7 @@ public static class TelemetryServiceCollectionExtensions
 
                 tracing.AddOtlpExporter(exp =>
                 {
-                    exp.Endpoint = options.Protocol == OtlpExportProtocol.Grpc ? options.Endpoint! : new Uri($"{options.Endpoint!}/v1/traces");
+                    exp.Endpoint = options.Protocol == OtlpExportProtocol.Grpc ? endpoint : new Uri($"{endpoint}/v1/traces");
                     exp.Protocol = options.Protocol;
                     exp.Headers = options.Headers;
                 });
@@ -188,8 +194,7 @@ public static class TelemetryServiceCollectionExtensions
 
                 metrics.AddOtlpExporter(exp =>
                 {
-                    exp.Endpoint = new Uri($"{options.Endpoint}/v1/metrics");
-                    exp.Endpoint = options.Protocol == OtlpExportProtocol.Grpc ? options.Endpoint! : new Uri($"{options.Endpoint!}/v1/metrics");
+                    exp.Endpoint = options.Protocol == OtlpExportProtocol.Grpc ? endpoint : new Uri($"{endpoint}/v1/metrics");
                     exp.Protocol = options.Protocol;
                     exp.Headers = options.Headers;
                 });
@@ -204,17 +209,18 @@ public static class TelemetryServiceCollectionExtensions
 
                 logging.AddOpenTelemetry(otel =>
                 {
-                    otel.IncludeScopes = true;
-                    otel.IncludeFormattedMessage = true;
+                    otel.IncludeScopes = options.IncludeScopes;
+                    otel.IncludeFormattedMessage = options.IncludeFormattedMessage;
 
                     otel.AddOtlpExporter(exp =>
                     {
-                        exp.Endpoint = options.Protocol == OtlpExportProtocol.Grpc ? options.Endpoint! : new Uri($"{options.Endpoint!}/v1/logs");
+                        exp.Endpoint = options.Protocol == OtlpExportProtocol.Grpc ? endpoint : new Uri($"{endpoint}/v1/logs");
                         exp.Protocol = options.Protocol;
                         exp.Headers = options.Headers;
                     });
                 });
             });
         }
+#pragma warning restore CS0618
     }
 }
