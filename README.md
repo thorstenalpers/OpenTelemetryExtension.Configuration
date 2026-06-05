@@ -1,11 +1,10 @@
 # OpenTelemetryExtension.Configuration
 
-[![License](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
+[![CI](https://github.com/thorstenalpers/OpenTelemetryExtension.Configuration/actions/workflows/ci.yml/badge.svg)](https://github.com/thorstenalpers/OpenTelemetryExtension.Configuration/actions/workflows/ci.yml)
+[![Coverage Status](https://coveralls.io/repos/github/thorstenalpers/OpenTelemetryExtension.Configuration/badge.svg?branch=develop)](https://coveralls.io/github/thorstenalpers/OpenTelemetryExtension.Configuration?branch=develop)
 [![NuGet Version](https://img.shields.io/nuget/v/OpenTelemetryExtension.Configuration.svg)](https://www.nuget.org/packages/OpenTelemetryExtension.Configuration)
 [![NuGet Downloads](https://img.shields.io/nuget/dt/OpenTelemetryExtension.Configuration.svg)](https://www.nuget.org/packages/OpenTelemetryExtension.Configuration)
-[![Coverage Status](https://coveralls.io/repos/github/thorstenalpers/OpenTelemetryExtension.Configuration/badge.svg?branch=develop)](https://coveralls.io/github/thorstenalpers/OpenTelemetryExtension.Configuration?branch=develop)
-[![CI](https://github.com/thorstenalpers/OpenTelemetryExtension.Configuration/actions/workflows/ci.yml/badge.svg)](https://github.com/thorstenalpers/OpenTelemetryExtension.Configuration/actions/workflows/ci.yml)
-[![Stars](https://img.shields.io/github/stars/thorstenalpers/OpenTelemetryExtension.Configuration?cacheSeconds=3600)](https://github.com/thorstenalpers/OpenTelemetryExtension.Configuration)
+[![License](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
 
 Wire up OpenTelemetry tracing, metrics and logging in your ASP.NET Core app with a single call and a few lines of `appsettings.json`.
 
