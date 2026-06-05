@@ -1,5 +1,4 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using OpenTelemetryExtension.Configuration.Sample.Model;
 
 namespace OpenTelemetryExtension.Configuration.Sample;
 
