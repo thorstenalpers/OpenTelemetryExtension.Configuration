@@ -10,6 +10,18 @@ Wire up OpenTelemetry tracing, metrics and logging in your ASP.NET Core app with
 
 ---
 
+## Features
+
+- **One-call setup** — tracing, metrics and logging via a single `AddTelemetry()`, configured from `appsettings.json` or code
+- **All three signals over OTLP** — HTTP/protobuf or gRPC, to any OTLP-compatible backend
+- **Built-in instrumentation** — ASP.NET Core, `HttpClient`, SQL Client and .NET runtime metrics, each toggleable
+- **Sensible defaults** — sampling, health-check path exclusion and exception recording work out of the box
+- **Startup validation** — misconfiguration fails fast with a clear error
+- **Extensible** — `ConfigureTracing`/`ConfigureMetrics`/`ConfigureLogging` hooks for custom sources, meters and providers
+- **Broad target support** — `netstandard2.0` and `net10.0`
+
+---
+
 ## Getting Started
 
 ### 1. Install
