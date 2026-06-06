@@ -1,4 +1,6 @@
-# <img src="https://raw.githubusercontent.com/thorstenalpers/OpenTelemetryExtension.Configuration/main/src/OpenTelemetryExtension.Configuration/logo.png" alt="" height="32" align="middle" /> OpenTelemetryExtension.Configuration
+<img src="https://raw.githubusercontent.com/thorstenalpers/OpenTelemetryExtension.Configuration/main/src/OpenTelemetryExtension.Configuration/logo.png" alt="" height="44" align="left" hspace="10" />
+
+# OpenTelemetryExtension.Configuration
 
 [![CI](https://github.com/thorstenalpers/OpenTelemetryExtension.Configuration/actions/workflows/ci.yml/badge.svg)](https://github.com/thorstenalpers/OpenTelemetryExtension.Configuration/actions/workflows/ci.yml)
 [![Coverage Status](https://coveralls.io/repos/github/thorstenalpers/OpenTelemetryExtension.Configuration/badge.svg?branch=develop)](https://coveralls.io/github/thorstenalpers/OpenTelemetryExtension.Configuration?branch=develop)
