@@ -203,6 +203,10 @@ gRPC endpoint is exposed on NodePort `31889` (Helm) or host port `31889` (Docker
 }
 ```
 
+Traces, metrics and logs from the sample app shown live in the Aspire Dashboard UI:
+
+![.NET Aspire Dashboard](./assets/Aspire-Dashboard.webp)
+
 ### Jaeger — `appsettings.jaeger.json`
 
 ```json
@@ -214,6 +218,9 @@ gRPC endpoint is exposed on NodePort `31889` (Helm) or host port `31889` (Docker
 }
 ```
 
+Traces from the sample app shown in the Jaeger UI:
+
+![Jaeger](./assets/Jaeger.webp)
 
 ### OpenObserve — HTTP/protobuf — `appsettings.openobserve-http.json`
 
@@ -226,6 +233,10 @@ gRPC endpoint is exposed on NodePort `31889` (Helm) or host port `31889` (Docker
   }
 }
 ```
+
+The same telemetry explored in the OpenObserve UI:
+
+![OpenObserve](./assets/OpenObserve.webp)
 
 
 ---
