@@ -82,7 +82,7 @@ All options live under the `Telemetry` key in `appsettings.json`.
 
 > `ConfigureTracing`, `ConfigureMetrics` and `ConfigureLogging` are code-only callbacks — see [Code configuration](#-code-configuration).
 >
-> For every key with its default value, see the [Full configuration reference](#-full-configuration-reference) at the end.
+> For every key with its default value, see the [Full configuration reference](#-full-configuration-reference) below.
 
 ---
 
@@ -167,6 +167,37 @@ o.ConfigureTracing = tracing => tracing.AddSource("MyApp");
 > The string passed to `AddMeter`/`AddSource` must **exactly match** the name you
 > gave the `Meter`/`ActivitySource` — that name is how OpenTelemetry routes the
 > data.
+
+---
+
+## 📋 Full configuration reference
+
+Every key with its **default** value (only `Enabled` and `Endpoint` are required to get started):
+
+```jsonc
+{
+  "Telemetry": {
+    "Enabled": false,                          // master switch — set true to activate
+    "Endpoint": "http://localhost:4318",       // OTLP collector endpoint (required)
+    "Headers": "",                             // exporter headers: "key1=value1,key2=value2"
+    "Protocol": "HttpProtobuf",                // "HttpProtobuf" (4318) or "Grpc" (4317)
+    "ServiceName": null,                        // service name shown in the backend
+    "ResourceAttributes": {},                   // extra attributes, e.g. { "deployment.environment": "production" }
+    "SampleRatio": 1.0,                         // 0.1 = 10% of traces, 1.0 = all
+    "EnableTracing": true,                      // distributed tracing
+    "EnableMetrics": true,                      // metrics collection
+    "EnableLogging": true,                      // log export via OTLP
+    "EnableAspNetCoreInstrumentation": true,    // incoming HTTP requests
+    "EnableHttpClientInstrumentation": true,    // outgoing HttpClient requests
+    "EnableSqlClientInstrumentation": false,    // SQL calls (opt-in)
+    "EnableRuntimeInstrumentation": true,       // GC, memory, thread pool metrics
+    "RecordExceptions": true,                   // exception stack traces on spans
+    "ExcludedPaths": [ "/health" ],             // paths excluded from tracing
+    "IncludeScopes": true,                      // log scopes in exported records
+    "IncludeFormattedMessage": true             // formatted message in exported records
+  }
+}
+```
 
 ---
 
@@ -262,37 +293,6 @@ The same telemetry explored in the OpenObserve UI:
 
 ![OpenObserve](./assets/OpenObserve.webp)
 
-
----
-
-## 📋 Full configuration reference
-
-Every key with its **default** value (only `Enabled` and `Endpoint` are required to get started):
-
-```jsonc
-{
-  "Telemetry": {
-    "Enabled": false,                          // master switch — set true to activate
-    "Endpoint": "http://localhost:4318",       // OTLP collector endpoint (required)
-    "Headers": "",                             // exporter headers: "key1=value1,key2=value2"
-    "Protocol": "HttpProtobuf",                // "HttpProtobuf" (4318) or "Grpc" (4317)
-    "ServiceName": null,                        // service name shown in the backend
-    "ResourceAttributes": {},                   // extra attributes, e.g. { "deployment.environment": "production" }
-    "SampleRatio": 1.0,                         // 0.1 = 10% of traces, 1.0 = all
-    "EnableTracing": true,                      // distributed tracing
-    "EnableMetrics": true,                      // metrics collection
-    "EnableLogging": true,                      // log export via OTLP
-    "EnableAspNetCoreInstrumentation": true,    // incoming HTTP requests
-    "EnableHttpClientInstrumentation": true,    // outgoing HttpClient requests
-    "EnableSqlClientInstrumentation": false,    // SQL calls (opt-in)
-    "EnableRuntimeInstrumentation": true,       // GC, memory, thread pool metrics
-    "RecordExceptions": true,                   // exception stack traces on spans
-    "ExcludedPaths": [ "/health" ],             // paths excluded from tracing
-    "IncludeScopes": true,                      // log scopes in exported records
-    "IncludeFormattedMessage": true             // formatted message in exported records
-  }
-}
-```
 
 ---
 
