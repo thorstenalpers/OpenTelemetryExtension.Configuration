@@ -36,11 +36,11 @@ prepare the repository and open the PR.
    - `dotnet test OpenTelemetryExtension.slnx -c Release`
 
 8. **End-to-end smoke test** — prove telemetry actually reaches a backend.
-   Requires a local Kubernetes cluster (k3s in WSL2) with Helm + kubectl. The
-   helper starts the backend via its Helm chart, runs the sample with the
-   matching launch profile, generates traffic and verifies ingestion:
-   - `bash scripts/smoke-test.sh openobserve`  (queries the OpenObserve API for records)
-   - `bash scripts/smoke-test.sh aspire`       (probes the Aspire OTLP endpoint)
+   Requires a local Kubernetes cluster (k3s in WSL2) with Helm + kubectl.
+   OpenObserve is used because it has a real query API, so the test can
+   positively confirm ingested data. The helper starts OpenObserve via its Helm
+   chart, runs the sample, generates traffic and queries the API for records:
+   - `bash scripts/smoke-test.sh`
    - Exit 0 = telemetry confirmed → continue. Non-zero = stop and report; do not
      release if telemetry does not arrive.
 
