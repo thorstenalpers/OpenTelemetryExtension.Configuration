@@ -6,7 +6,7 @@
 [![NuGet Downloads](https://img.shields.io/nuget/dt/OpenTelemetryExtension.Configuration.svg)](https://www.nuget.org/packages/OpenTelemetryExtension.Configuration)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
 
-Wire up OpenTelemetry tracing, metrics and logging in your ASP.NET Core app with a single call and a few lines of `appsettings.json`.
+Configurable OpenTelemetry setup for ASP.NET Core via `appsettings.json` — tracing, metrics and logging with a single `AddTelemetry()` call.
 
 ---
 
