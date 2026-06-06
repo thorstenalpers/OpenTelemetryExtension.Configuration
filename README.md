@@ -1,5 +1,5 @@
 <h1>
-  <img src="https://raw.githubusercontent.com/thorstenalpers/OpenTelemetryExtension.Configuration/main/src/OpenTelemetryExtension.Configuration/logo.png" alt="" width="48" align="left" />
+  <img src="https://raw.githubusercontent.com/thorstenalpers/OpenTelemetryExtension.Configuration/main/src/OpenTelemetryExtension.Configuration/logo.png" alt="" width="35" align="left" />
   OpenTelemetryExtension.Configuration
 </h1>
 
