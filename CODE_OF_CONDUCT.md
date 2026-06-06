@@ -14,7 +14,7 @@
 
 ## Reporting
 
-If you experience or witness unacceptable behavior, please contact the maintainer privately at thorsten.alpers@gmail.com. All reports will be handled confidentially.
+If you experience or witness unacceptable behavior, please report it by opening an issue at https://github.com/thorstenalpers/OpenTelemetryExtension.Configuration/issues. All reports will be reviewed and handled appropriately.
 
 ## Enforcement
 
