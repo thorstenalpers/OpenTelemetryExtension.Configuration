@@ -11,9 +11,9 @@ LOGO = ROOT / "src" / "OpenTelemetryExtension.Configuration" / "logo.png"
 OUT = ROOT / "assets" / "banner.png"
 
 TEXT = "OpenTelemetryExtension.Configuration"
-TEXT_COLOR = (26, 75, 140, 255)    # #1A4B8C — darker blue, matches logo
+TEXT_COLOR = (10, 25, 49, 255)     # #0A1931 — very dark blue, near-black
 SCALE = 2                          # supersample for crisp text
-LOGO_H = 72
+LOGO_RATIO = 1.1                   # logo height = 110% of the text height
 GAP = 22
 PAD_X = 8
 PAD_Y = 10
@@ -31,15 +31,16 @@ def load_font(size):
     return ImageFont.load_default()
 
 s = SCALE
-logo = Image.open(LOGO).convert("RGBA")
-lh = LOGO_H * s
-lw = round(logo.width * lh / logo.height)
-logo = logo.resize((lw, lh), Image.LANCZOS)
-
 font = load_font(round(40 * s))
 tmp = ImageDraw.Draw(Image.new("RGBA", (1, 1)))
 bbox = tmp.textbbox((0, 0), TEXT, font=font)
 tw, th = bbox[2] - bbox[0], bbox[3] - bbox[1]
+
+# Size the logo relative to the text height.
+logo = Image.open(LOGO).convert("RGBA")
+lh = round(th * LOGO_RATIO)
+lw = round(logo.width * lh / logo.height)
+logo = logo.resize((lw, lh), Image.LANCZOS)
 
 W = PAD_X * s + lw + GAP * s + tw + PAD_X * s
 H = PAD_Y * s * 2 + max(lh, th)
