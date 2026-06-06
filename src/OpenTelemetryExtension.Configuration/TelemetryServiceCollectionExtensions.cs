@@ -146,7 +146,7 @@ public static class TelemetryServiceCollectionExtensions
                         opt.RecordException = options.RecordExceptions;
                         if (options.ExcludedPaths.Length > 0)
                         {
-                            opt.Filter = ctx => ShouldInstrument(ctx.Request.Path, options.ExcludedPaths);
+                            opt.Filter = CreateRequestFilter(options.ExcludedPaths);
                         }
                     });
                 }
@@ -234,4 +234,13 @@ public static class TelemetryServiceCollectionExtensions
     /// <returns><c>true</c> if the request should be instrumented; otherwise <c>false</c>.</returns>
     internal static bool ShouldInstrument(PathString path, string[] excludedPaths)
         => !excludedPaths.Any(p => path.StartsWithSegments(p));
+
+    /// <summary>
+    /// Builds the ASP.NET Core instrumentation request filter that skips
+    /// requests whose path starts (segment-wise) with any of <paramref name="excludedPaths"/>.
+    /// </summary>
+    /// <param name="excludedPaths">Path prefixes to exclude from instrumentation.</param>
+    /// <returns>A predicate returning <c>true</c> when the request should be instrumented.</returns>
+    internal static Func<HttpContext, bool> CreateRequestFilter(string[] excludedPaths)
+        => ctx => ShouldInstrument(ctx.Request.Path, excludedPaths);
 }

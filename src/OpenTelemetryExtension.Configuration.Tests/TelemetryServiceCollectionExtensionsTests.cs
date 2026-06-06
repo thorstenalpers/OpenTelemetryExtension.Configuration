@@ -525,6 +525,20 @@ public class TelemetryServiceCollectionExtensionsTests
         Assert.True(result);
     }
 
+    [Theory]
+    [InlineData("/health", false)]      // excluded → filter returns false
+    [InlineData("/api/orders", true)]   // not excluded → filter returns true
+    public void CreateRequestFilter_FiltersByPath(string path, bool expectedInstrument)
+    {
+        var filter = TelemetryServiceCollectionExtensions.CreateRequestFilter(["/health"]);
+        var context = new DefaultHttpContext();
+        context.Request.Path = path;
+
+        var result = filter(context);
+
+        Assert.Equal(expectedInstrument, result);
+    }
+
     // ── Resource configuration ────────────────────────────────────────────────
 
     [Fact]
