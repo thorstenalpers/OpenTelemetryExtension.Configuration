@@ -109,8 +109,6 @@ public static class TelemetryServiceCollectionExtensions
             return;
         }
 
-        // Endpoint is [Required] and validated before ConfigureTelemetry is reached.
-#pragma warning disable CS0618 // OtlpExportProtocol.Grpc is intentionally supported; warning only applies to netstandard2.0 without HttpClientFactory
         var endpoint = options.Endpoint!;
         var serviceVersion = Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
 
@@ -165,7 +163,9 @@ public static class TelemetryServiceCollectionExtensions
 
                 tracing.AddOtlpExporter(exp =>
                 {
+#pragma warning disable CS0618 // OtlpExportProtocol.Grpc is intentionally supported; warning only applies to netstandard2.0 without HttpClientFactory
                     exp.Endpoint = options.Protocol == OtlpExportProtocol.Grpc ? endpoint : new Uri($"{endpoint}/v1/traces");
+#pragma warning restore CS0618
                     exp.Protocol = options.Protocol;
                     exp.Headers = options.Headers;
                 });
@@ -195,7 +195,9 @@ public static class TelemetryServiceCollectionExtensions
 
                 metrics.AddOtlpExporter(exp =>
                 {
+#pragma warning disable CS0618 // OtlpExportProtocol.Grpc is intentionally supported; warning only applies to netstandard2.0 without HttpClientFactory
                     exp.Endpoint = options.Protocol == OtlpExportProtocol.Grpc ? endpoint : new Uri($"{endpoint}/v1/metrics");
+#pragma warning restore CS0618
                     exp.Protocol = options.Protocol;
                     exp.Headers = options.Headers;
                 });
@@ -215,32 +217,24 @@ public static class TelemetryServiceCollectionExtensions
 
                     otel.AddOtlpExporter(exp =>
                     {
+#pragma warning disable CS0618 // OtlpExportProtocol.Grpc is intentionally supported; warning only applies to netstandard2.0 without HttpClientFactory
                         exp.Endpoint = options.Protocol == OtlpExportProtocol.Grpc ? endpoint : new Uri($"{endpoint}/v1/logs");
+#pragma warning restore CS0618
                         exp.Protocol = options.Protocol;
                         exp.Headers = options.Headers;
                     });
                 });
             });
         }
-#pragma warning restore CS0618
     }
 
-    /// <summary>
-    /// Determines whether a request to <paramref name="path"/> should be instrumented,
-    /// i.e. its path does not start (segment-wise) with any of <paramref name="excludedPaths"/>.
-    /// </summary>
-    /// <param name="path">The incoming request path.</param>
-    /// <param name="excludedPaths">Path prefixes to exclude from instrumentation.</param>
-    /// <returns><c>true</c> if the request should be instrumented; otherwise <c>false</c>.</returns>
     internal static bool ShouldInstrument(PathString path, string[] excludedPaths)
-        => !excludedPaths.Any(p => path.StartsWithSegments(p));
+    {
+        return !excludedPaths.Any(p => path.StartsWithSegments(p));
+    }
 
-    /// <summary>
-    /// Builds the ASP.NET Core instrumentation request filter that skips
-    /// requests whose path starts (segment-wise) with any of <paramref name="excludedPaths"/>.
-    /// </summary>
-    /// <param name="excludedPaths">Path prefixes to exclude from instrumentation.</param>
-    /// <returns>A predicate returning <c>true</c> when the request should be instrumented.</returns>
     internal static Func<HttpContext, bool> CreateRequestFilter(string[] excludedPaths)
-        => ctx => ShouldInstrument(ctx.Request.Path, excludedPaths);
+    {
+        return ctx => ShouldInstrument(ctx.Request.Path, excludedPaths);
+    }
 }
