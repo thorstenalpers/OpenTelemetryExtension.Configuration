@@ -144,6 +144,71 @@ builder.Services.AddTelemetry(builder.Configuration, o =>
 });
 ```
 
+### The `Configure*` hooks — Sources & Meters
+
+The three callbacks are the extension points for **your own** telemetry. The
+built-in instrumentation (ASP.NET Core, `HttpClient`, SQL, runtime) is wired up
+automatically; these hooks let you add the signals your application emits itself.
+
+| Hook | Builder | Used to register |
+|---|---|---|
+| `ConfigureTracing` | [`TracerProviderBuilder`](https://opentelemetry.io/docs/languages/net/instrumentation/#traces) | **Activity Sources** via `AddSource("Name")` |
+| `ConfigureMetrics` | [`MeterProviderBuilder`](https://opentelemetry.io/docs/languages/net/instrumentation/#metrics) | **Meters** via `AddMeter("Name")` |
+| `ConfigureLogging` | [`ILoggingBuilder`](https://learn.microsoft.com/dotnet/api/microsoft.extensions.logging.iloggingbuilder) | extra logging providers, filters, etc. |
+
+**What is a Meter?**
+A [`Meter`](https://learn.microsoft.com/dotnet/api/system.diagnostics.metrics.meter)
+(from `System.Diagnostics.Metrics`) is the factory you create instruments
+(counters, histograms, gauges) from. Each `Meter` has a **name**, and OpenTelemetry
+only collects metrics from meters you have explicitly registered with
+`AddMeter("That.Name")`. Without that call, your custom metrics are never exported.
+
+```csharp
+// 1. Create a Meter and an instrument somewhere in your app
+private static readonly Meter Meter = new("MyApp.Orders");
+private static readonly Counter<long> OrdersPlaced =
+    Meter.CreateCounter<long>("orders.placed");
+
+// ... later
+OrdersPlaced.Add(1);
+
+// 2. Register the meter's name so it gets exported
+o.ConfigureMetrics = metrics => metrics.AddMeter("MyApp.Orders");
+```
+
+**What is a Source?**
+An [`ActivitySource`](https://learn.microsoft.com/dotnet/api/system.diagnostics.activitysource)
+is the tracing equivalent: it creates `Activity` objects (= spans). Register its
+name with `AddSource("MyApp")` so your custom spans are sampled and exported.
+
+```csharp
+private static readonly ActivitySource Activity = new("MyApp");
+
+using var span = Activity.StartActivity("ProcessOrder");
+// ... work being traced
+
+o.ConfigureTracing = tracing => tracing.AddSource("MyApp");
+```
+
+> The string passed to `AddMeter`/`AddSource` must **exactly match** the name you
+> gave the `Meter`/`ActivitySource` — that name is how OpenTelemetry routes the
+> data.
+
+---
+
+## 📚 References
+
+- **OpenTelemetry .NET** — [official docs](https://opentelemetry.io/docs/languages/net/)
+  · [GitHub](https://github.com/open-telemetry/opentelemetry-dotnet)
+- **.NET observability (Microsoft Learn)**
+  — [Metrics](https://learn.microsoft.com/dotnet/core/diagnostics/metrics)
+  · [Distributed tracing](https://learn.microsoft.com/dotnet/core/diagnostics/distributed-tracing)
+  · [Logging](https://learn.microsoft.com/dotnet/core/extensions/logging)
+- **APIs** — [`Meter`](https://learn.microsoft.com/dotnet/api/system.diagnostics.metrics.meter)
+  · [`ActivitySource`](https://learn.microsoft.com/dotnet/api/system.diagnostics.activitysource)
+- **OTLP exporter** — [configuration reference](https://opentelemetry.io/docs/languages/net/exporters/#otlp)
+  · [environment variables](https://opentelemetry.io/docs/specs/otel/configuration/sdk-environment-variables/)
+
 ---
 
 ## 🔌 Running Locally with a Backend
