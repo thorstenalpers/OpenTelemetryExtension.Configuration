@@ -37,7 +37,7 @@ Target version: **$1** (if empty, ask the user which version to release).
      (omit empty sections). Write user-facing notes, not raw commit subjects.
 
 5. **Run the test suite** to make sure the release is green:
-   `dotnet test src/OpenTelemetryExtension.slnx -c Release --filter "Category!=Long-Running"`
+   `dotnet test OpenTelemetryExtension.slnx -c Release --filter "Category!=Long-Running"`
    - If tests fail, stop and report — do not commit a broken release.
 
 6. **Commit** (do NOT tag — the workflow creates the tag):

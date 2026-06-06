@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      Solution_Name: "src/OpenTelemetryExtension.slnx"
+      Solution_Name: "OpenTelemetryExtension.slnx"
       Nuget_Project_Path: "src/OpenTelemetryExtension.Configuration/OpenTelemetryExtension.Configuration.csproj"
       Test_Project_Path: "src/OpenTelemetryExtension.Configuration.Tests/OpenTelemetryExtension.Configuration.Tests.csproj"       
 

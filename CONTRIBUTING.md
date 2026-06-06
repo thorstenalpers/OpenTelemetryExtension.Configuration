@@ -17,8 +17,8 @@ For anything beyond a small fix, please [open an issue](https://github.com/thors
 ## Build & Test
 
 ```bash
-dotnet build src/OpenTelemetryExtension.slnx -c Release
-dotnet test  src/OpenTelemetryExtension.slnx -c Release --filter "Category!=Long-Running"
+dotnet build OpenTelemetryExtension.slnx -c Release
+dotnet test  OpenTelemetryExtension.slnx -c Release --filter "Category!=Long-Running"
 ```
 
 ## Code Style

@@ -17,7 +17,7 @@ jobs:
     runs-on: windows-latest
 
     env:
-      Solution: "src/OpenTelemetryExtension.slnx"
+      Solution: "OpenTelemetryExtension.slnx"
       Test_Project: "src/OpenTelemetryExtension.Configuration.Tests/OpenTelemetryExtension.Configuration.Tests.csproj"
       FORCE_COLOR: "true"
       DOTNET_LOGGING__CONSOLE__COLORBEHAVIOR: Enabled

@@ -37,8 +37,8 @@ safe default; `AddTelemetry()` is a no-op when disabled. `Endpoint` is
 ## Build & test
 
 ```bash
-dotnet build src/OpenTelemetryExtension.slnx -c Release
-dotnet test  src/OpenTelemetryExtension.slnx -c Release --filter "Category!=Long-Running"
+dotnet build OpenTelemetryExtension.slnx -c Release
+dotnet test  OpenTelemetryExtension.slnx -c Release --filter "Category!=Long-Running"
 ```
 
 Tests use **xUnit + Moq**. No integration test infrastructure needed — all
