@@ -81,35 +81,8 @@ All options live under the `Telemetry` key in `appsettings.json`.
 | `IncludeFormattedMessage` | `bool` | `true` | Includes the formatted message in exported log records. |
 
 > `ConfigureTracing`, `ConfigureMetrics` and `ConfigureLogging` are code-only callbacks — see [Code configuration](#-code-configuration).
-
-### Full example
-
-Every key with its **default** value (only `Enabled` and `Endpoint` are required to get started):
-
-```jsonc
-{
-  "Telemetry": {
-    "Enabled": false,                          // master switch — set true to activate
-    "Endpoint": "http://localhost:4318",       // OTLP collector endpoint (required)
-    "Headers": "",                             // exporter headers: "key1=value1,key2=value2"
-    "Protocol": "HttpProtobuf",                // "HttpProtobuf" (4318) or "Grpc" (4317)
-    "ServiceName": null,                        // service name shown in the backend
-    "ResourceAttributes": {},                   // extra attributes, e.g. { "deployment.environment": "production" }
-    "SampleRatio": 1.0,                         // 0.1 = 10% of traces, 1.0 = all
-    "EnableTracing": true,                      // distributed tracing
-    "EnableMetrics": true,                      // metrics collection
-    "EnableLogging": true,                      // log export via OTLP
-    "EnableAspNetCoreInstrumentation": true,    // incoming HTTP requests
-    "EnableHttpClientInstrumentation": true,    // outgoing HttpClient requests
-    "EnableSqlClientInstrumentation": false,    // SQL calls (opt-in)
-    "EnableRuntimeInstrumentation": true,       // GC, memory, thread pool metrics
-    "RecordExceptions": true,                   // exception stack traces on spans
-    "ExcludedPaths": [ "/health" ],             // paths excluded from tracing
-    "IncludeScopes": true,                      // log scopes in exported records
-    "IncludeFormattedMessage": true             // formatted message in exported records
-  }
-}
-```
+>
+> For every key with its default value, see the [Full configuration reference](#-full-configuration-reference) at the end.
 
 ---
 
@@ -141,6 +114,7 @@ builder.Services.AddTelemetry(builder.Configuration, o =>
     // Everything from appsettings.json is already bound here.
     o.ConfigureTracing = tracing => tracing.AddSource("MyApp");
     o.ConfigureMetrics = metrics => metrics.AddMeter("MyApp");
+    o.ConfigureLogging = logging => logging.AddConsole();
 });
 ```
 
@@ -193,21 +167,6 @@ o.ConfigureTracing = tracing => tracing.AddSource("MyApp");
 > The string passed to `AddMeter`/`AddSource` must **exactly match** the name you
 > gave the `Meter`/`ActivitySource` — that name is how OpenTelemetry routes the
 > data.
-
----
-
-## 📚 References
-
-- **OpenTelemetry .NET** — [official docs](https://opentelemetry.io/docs/languages/net/)
-  · [GitHub](https://github.com/open-telemetry/opentelemetry-dotnet)
-- **.NET observability (Microsoft Learn)**
-  — [Metrics](https://learn.microsoft.com/dotnet/core/diagnostics/metrics)
-  · [Distributed tracing](https://learn.microsoft.com/dotnet/core/diagnostics/distributed-tracing)
-  · [Logging](https://learn.microsoft.com/dotnet/core/extensions/logging)
-- **APIs** — [`Meter`](https://learn.microsoft.com/dotnet/api/system.diagnostics.metrics.meter)
-  · [`ActivitySource`](https://learn.microsoft.com/dotnet/api/system.diagnostics.activitysource)
-- **OTLP exporter** — [configuration reference](https://opentelemetry.io/docs/languages/net/exporters/#otlp)
-  · [environment variables](https://opentelemetry.io/docs/specs/otel/configuration/sdk-environment-variables/)
 
 ---
 
@@ -303,6 +262,52 @@ The same telemetry explored in the OpenObserve UI:
 
 ![OpenObserve](./assets/OpenObserve.webp)
 
+
+---
+
+## 📋 Full configuration reference
+
+Every key with its **default** value (only `Enabled` and `Endpoint` are required to get started):
+
+```jsonc
+{
+  "Telemetry": {
+    "Enabled": false,                          // master switch — set true to activate
+    "Endpoint": "http://localhost:4318",       // OTLP collector endpoint (required)
+    "Headers": "",                             // exporter headers: "key1=value1,key2=value2"
+    "Protocol": "HttpProtobuf",                // "HttpProtobuf" (4318) or "Grpc" (4317)
+    "ServiceName": null,                        // service name shown in the backend
+    "ResourceAttributes": {},                   // extra attributes, e.g. { "deployment.environment": "production" }
+    "SampleRatio": 1.0,                         // 0.1 = 10% of traces, 1.0 = all
+    "EnableTracing": true,                      // distributed tracing
+    "EnableMetrics": true,                      // metrics collection
+    "EnableLogging": true,                      // log export via OTLP
+    "EnableAspNetCoreInstrumentation": true,    // incoming HTTP requests
+    "EnableHttpClientInstrumentation": true,    // outgoing HttpClient requests
+    "EnableSqlClientInstrumentation": false,    // SQL calls (opt-in)
+    "EnableRuntimeInstrumentation": true,       // GC, memory, thread pool metrics
+    "RecordExceptions": true,                   // exception stack traces on spans
+    "ExcludedPaths": [ "/health" ],             // paths excluded from tracing
+    "IncludeScopes": true,                      // log scopes in exported records
+    "IncludeFormattedMessage": true             // formatted message in exported records
+  }
+}
+```
+
+---
+
+## 📚 References
+
+- **OpenTelemetry .NET** — [official docs](https://opentelemetry.io/docs/languages/net/)
+  · [GitHub](https://github.com/open-telemetry/opentelemetry-dotnet)
+- **.NET observability (Microsoft Learn)**
+  — [Metrics](https://learn.microsoft.com/dotnet/core/diagnostics/metrics)
+  · [Distributed tracing](https://learn.microsoft.com/dotnet/core/diagnostics/distributed-tracing)
+  · [Logging](https://learn.microsoft.com/dotnet/core/extensions/logging)
+- **APIs** — [`Meter`](https://learn.microsoft.com/dotnet/api/system.diagnostics.metrics.meter)
+  · [`ActivitySource`](https://learn.microsoft.com/dotnet/api/system.diagnostics.activitysource)
+- **OTLP exporter** — [configuration reference](https://opentelemetry.io/docs/languages/net/exporters/#otlp)
+  · [environment variables](https://opentelemetry.io/docs/specs/otel/configuration/sdk-environment-variables/)
 
 ---
 
