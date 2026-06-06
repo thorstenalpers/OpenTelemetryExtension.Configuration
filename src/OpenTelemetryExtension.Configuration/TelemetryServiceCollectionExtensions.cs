@@ -120,11 +120,6 @@ public static class TelemetryServiceCollectionExtensions
                     resource.AddService(serviceName: options.ServiceName!, serviceVersion: serviceVersion);
                 }
 
-                if (!string.IsNullOrWhiteSpace(options.EnvironmentName))
-                {
-                    resource.AddAttributes([new("deployment.environment", options.EnvironmentName!)]);
-                }
-
                 if (options.ResourceAttributes.Count > 0)
                 {
                     resource.AddAttributes(options.ResourceAttributes.Select(kv => new KeyValuePair<string, object>(kv.Key, kv.Value)));

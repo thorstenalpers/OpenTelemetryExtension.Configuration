@@ -98,7 +98,6 @@ public class TelemetryServiceCollectionExtensionsTests
             ["Telemetry:Headers"] = "x-key=value",
             ["Telemetry:Protocol"] = "HttpProtobuf",
             ["Telemetry:ServiceName"] = "svc",
-            ["Telemetry:EnvironmentName"] = "prod",
             ["Telemetry:SampleRatio"] = "0.5",
             ["Telemetry:EnableTracing"] = "true",
             ["Telemetry:EnableMetrics"] = "true",
@@ -338,7 +337,7 @@ public class TelemetryServiceCollectionExtensionsTests
         Assert.Null(ex);
     }
 
-    // ── ServiceName / EnvironmentName ─────────────────────────────────────
+    // ── ServiceName ───────────────────────────────────────────────────────
 
     [Fact]
     public void AddTelemetry_WithServiceName_DoesNotThrow()
@@ -350,22 +349,13 @@ public class TelemetryServiceCollectionExtensionsTests
     }
 
     [Fact]
-    public void AddTelemetry_WithEnvironmentName_DoesNotThrow()
-    {
-        var services = NewServices();
-        var ex = Record.Exception(() => services.AddTelemetry(MinimalConfigure(o =>
-            o.EnvironmentName = "staging")));
-        Assert.Null(ex);
-    }
-
-    [Fact]
-    public void AddTelemetry_WithServiceNameAndEnvironmentName_DoesNotThrow()
+    public void AddTelemetry_WithServiceNameAndResourceAttributes_DoesNotThrow()
     {
         var services = NewServices();
         services.AddTelemetry(MinimalConfigure(o =>
         {
             o.ServiceName = "my-api";
-            o.EnvironmentName = "production";
+            o.ResourceAttributes = new Dictionary<string, string> { ["deployment.environment"] = "production" };
         }));
 
         var ex = Record.Exception(() => BuildAndResolveProviders(services));
@@ -550,22 +540,11 @@ public class TelemetryServiceCollectionExtensionsTests
     }
 
     [Fact]
-    public void AddTelemetry_WithEnvironmentName_RegistersTracerProvider()
-    {
-        var services = NewServices();
-        services.AddTelemetry(MinimalConfigure(o => o.EnvironmentName = "production"));
-        Assert.NotNull(services.BuildServiceProvider().GetService<TracerProvider>());
-    }
-
-    [Fact]
-    public void AddTelemetry_WithServiceNameAndEnvironmentName_RegistersTracerProvider()
+    public void AddTelemetry_WithResourceAttributes_RegistersTracerProvider()
     {
         var services = NewServices();
         services.AddTelemetry(MinimalConfigure(o =>
-        {
-            o.ServiceName = "my-api";
-            o.EnvironmentName = "production";
-        }));
+            o.ResourceAttributes = new Dictionary<string, string> { ["deployment.environment"] = "production" }));
         Assert.NotNull(services.BuildServiceProvider().GetService<TracerProvider>());
     }
 
@@ -588,20 +567,11 @@ public class TelemetryServiceCollectionExtensionsTests
     }
 
     [Fact]
-    public void AddTelemetry_NullEnvironmentName_DoesNotThrow()
+    public void AddTelemetry_EmptyResourceAttributes_DoesNotThrow()
     {
         var services = NewServices();
         var ex = Record.Exception(() =>
-            services.AddTelemetry(MinimalConfigure(o => o.EnvironmentName = null)));
-        Assert.Null(ex);
-    }
-
-    [Fact]
-    public void AddTelemetry_WhitespaceEnvironmentName_DoesNotThrow()
-    {
-        var services = NewServices();
-        var ex = Record.Exception(() =>
-            services.AddTelemetry(MinimalConfigure(o => o.EnvironmentName = "   ")));
+            services.AddTelemetry(MinimalConfigure(o => o.ResourceAttributes = [])));
         Assert.Null(ex);
     }
 }

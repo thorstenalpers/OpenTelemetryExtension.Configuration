@@ -19,8 +19,7 @@ using OpenTelemetry.Trace;
 ///   "Headers":                         "",
 ///   "Protocol":                        "HttpProtobuf",
 ///   "ServiceName":                     null,
-///   "EnvironmentName":                 null,
-///   "ResourceAttributes":              { "team": "backend", "region": "eu-west-1" },
+///   "ResourceAttributes":              { "deployment.environment": "production", "team": "backend" },
 ///   "SampleRatio":                     1.0,
 ///   "EnableTracing":                   true,
 ///   "EnableMetrics":                   true,
@@ -77,15 +76,9 @@ public sealed class TelemetryOptions
     public string? ServiceName { get; set; } = null;
 
     /// <summary>
-    /// Environment name reported as <c>deployment.environment</c> resource attribute.
-    /// Example: <c>production</c>, <c>staging</c>
-    /// Default: <c>null</c>
-    /// </summary>
-    public string? EnvironmentName { get; set; } = null;
-
-    /// <summary>
-    /// Additional OpenTelemetry resource attributes added alongside <see cref="ServiceName"/> and <see cref="EnvironmentName"/>.
-    /// Example: <c>{ "team": "backend", "region": "eu-west-1" }</c>
+    /// Additional OpenTelemetry resource attributes added alongside <see cref="ServiceName"/>.
+    /// Use <c>deployment.environment</c> to report the environment.
+    /// Example: <c>{ "deployment.environment": "production", "team": "backend" }</c>
     /// Default: <c>{}</c>
     /// </summary>
     public Dictionary<string, string> ResourceAttributes { get; set; } = [];

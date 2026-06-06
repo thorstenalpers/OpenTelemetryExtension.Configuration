@@ -9,7 +9,7 @@
 		<PackageId>OpenTelemetryExtension.Configuration</PackageId>
 		<Authors>Thorsten Alpers</Authors>
 		<Copyright>Copyright © $([System.DateTime]::Now.Year) Thorsten Alpers</Copyright>
-		<Description>Configurable OpenTelemetry setup for ASP.NET Core via appsettings.json — tracing, metrics and logging with a single AddTelemetry() call.</Description>
+		<Description>Configurable OpenTelemetry setup for .NET applications providing tracing, metrics, and logging via OTLP, configurable through code or appsettings.json.</Description>
 		<PackageTags>OpenTelemetry;Otel;Tracing;Traces;Metrics;Logs;Logging;OTLP;ASP.NET Core;appsettings;Configuration;Instrumentation;Telemetry;HttpClient;SqlClient;gRPC</PackageTags>
 		<PackageProjectUrl>https://github.com/thorstenalpers/OpenTelemetryExtension.Configuration</PackageProjectUrl>
 		<RepositoryUrl>https://github.com/thorstenalpers/OpenTelemetryExtension.Configuration</RepositoryUrl>

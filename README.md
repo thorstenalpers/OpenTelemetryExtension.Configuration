@@ -6,7 +6,7 @@
 [![NuGet Downloads](https://img.shields.io/nuget/dt/OpenTelemetryExtension.Configuration.svg)](https://www.nuget.org/packages/OpenTelemetryExtension.Configuration)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
 
-Configurable OpenTelemetry setup for ASP.NET Core via `appsettings.json` — tracing, metrics and logging with a single `AddTelemetry()` call.
+Configurable OpenTelemetry setup for .NET applications providing **tracing, metrics, and logging** via OTLP, configurable through code or `appsettings.json`.
 
 ---
 
@@ -22,31 +22,52 @@ Configurable OpenTelemetry setup for ASP.NET Core via `appsettings.json` — tra
 
 ---
 
-## Getting Started
 
-### 1. Install
+## 📦 Installation
 
-```shell
+```bash
 dotnet add package OpenTelemetryExtension.Configuration
 ```
 
-### 2. Register
+---
+
+## ⚙️ Quick Start
+
+### 1. Register services
 
 ```csharp
 builder.Services.AddTelemetry(builder.Configuration);
 ```
 
-### 3. Configure
+---
+
+### 2. Configuration (appsettings.json)
 
 ```json
 {
   "Telemetry": {
-    "Enabled":      true,
-    "Endpoint":     "http://localhost:4318",
-    "ServiceName":  "my-api",
-    "EnvironmentName": "production"
+    "Enabled": true,
+    "Endpoint": "http://localhost:4318",
+    "ServiceName": "my-api",
+    "ResourceAttributes": {
+      "deployment.environment": "production"
+    }
   }
 }
+```
+
+---
+
+## ✨ Code Configuration (Alternative)
+
+```csharp
+builder.Services.AddTelemetry(o =>
+{
+    o.Endpoint = new Uri("http://localhost:4318");
+    o.ServiceName = "my-api";
+    o.ResourceAttributes = new() { ["deployment.environment"] = "production" };
+    o.SampleRatio = 0.1;
+});
 ```
 
 That's it. Tracing, metrics and logging are all exported via OTLP.
@@ -64,8 +85,7 @@ All options are set under the `Telemetry` key in `appsettings.json`.
 | `Headers` | `string` | `""` | Exporter headers. Format: `key1=value1,key2=value2`. |
 | `Protocol` | `string` | `HttpProtobuf` | `HttpProtobuf` (port 4318) or `Grpc` (port 4317). |
 | `ServiceName` | `string?` | `null` | Service name shown in the backend. |
-| `EnvironmentName` | `string?` | `null` | Reported as `deployment.environment` attribute. |
-| `ResourceAttributes` | `object` | `{}` | Additional resource attributes, e.g. `{ "team": "backend" }`. |
+| `ResourceAttributes` | `object` | `{}` | Additional resource attributes, e.g. `{ "deployment.environment": "production", "team": "backend" }`. |
 | `SampleRatio` | `double` | `1.0` | Fraction of traces to sample. `0.1` = 10%, `1.0` = all. |
 | `EnableTracing` | `bool` | `true` | Enables distributed tracing. |
 | `EnableMetrics` | `bool` | `true` | Enables metrics collection. |
@@ -89,8 +109,8 @@ All options are set under the `Telemetry` key in `appsettings.json`.
     "Enabled":         true,
     "Endpoint":        "http://otel-collector:4318",
     "ServiceName":     "my-api",
-    "EnvironmentName":  "Stage",
     "ResourceAttributes": {
+      "deployment.environment": "Stage",
       "team": "backend"
     }
   }
@@ -106,7 +126,7 @@ builder.Services.AddTelemetry(o =>
 {
     o.Endpoint        = new Uri("http://localhost:4318");
     o.ServiceName     = "my-api";
-    o.EnvironmentName = "production";
+    o.ResourceAttributes = new() { ["deployment.environment"] = "production" };
     o.SampleRatio     = 0.1;
 
     // Register additional instrumentation

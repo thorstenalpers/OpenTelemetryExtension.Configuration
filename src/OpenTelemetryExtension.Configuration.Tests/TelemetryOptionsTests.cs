@@ -31,10 +31,6 @@ public class TelemetryOptionsTests
         => Assert.Null(new TelemetryOptions().ServiceName);
 
     [Fact]
-    public void Defaults_EnvironmentName_IsNull()
-        => Assert.Null(new TelemetryOptions().EnvironmentName);
-
-    [Fact]
     public void Defaults_EnableTracing_IsTrue()
         => Assert.True(new TelemetryOptions().EnableTracing);
 
@@ -134,13 +130,6 @@ public class TelemetryOptionsTests
     {
         var o = new TelemetryOptions { ServiceName = "my-service" };
         Assert.Equal("my-service", o.ServiceName);
-    }
-
-    [Fact]
-    public void Property_EnvironmentName_CanBeSet()
-    {
-        var o = new TelemetryOptions { EnvironmentName = "production" };
-        Assert.Equal("production", o.EnvironmentName);
     }
 
     [Fact]
