@@ -136,6 +136,21 @@ builder.Services.AddTelemetry(o =>
 });
 ```
 
+### Configuration + code
+
+Bind the base settings from `appsettings.json` and add code-only options
+(such as `ConfigureTracing`) on top. Both sources are combined — values bound
+from configuration can still be overridden in the callback:
+
+```csharp
+builder.Services.AddTelemetry(builder.Configuration, o =>
+{
+    // Everything from appsettings.json is already bound here.
+    o.ConfigureTracing = tracing => tracing.AddSource("MyApp");
+    o.ConfigureMetrics = metrics => metrics.AddMeter("MyApp");
+});
+```
+
 ---
 
 ## Backend Examples

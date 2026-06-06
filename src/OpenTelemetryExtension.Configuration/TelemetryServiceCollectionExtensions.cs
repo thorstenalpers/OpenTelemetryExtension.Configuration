@@ -46,6 +46,41 @@ public static class TelemetryServiceCollectionExtensions
     /// e.g. when <see cref="TelemetryOptions.Endpoint"/> is <c>null</c>.
     /// </exception>
     public static IServiceCollection AddTelemetry(this IServiceCollection services, IConfiguration configuration)
+        => services.AddTelemetry(configuration, configure: null);
+
+    /// <summary>
+    /// Registers OpenTelemetry tracing, metrics and logging by binding the
+    /// <c>Telemetry</c> section of <paramref name="configuration"/> and then
+    /// applying <paramref name="configure"/> on top. Both sources are combined:
+    /// values bound from configuration can be overridden in code, and code-only
+    /// options such as <see cref="TelemetryOptions.ConfigureTracing"/> can be set.
+    /// </summary>
+    /// <param name="services">The <see cref="IServiceCollection"/> to add services to.</param>
+    /// <param name="configuration">
+    /// The application configuration. Must contain a <c>Telemetry</c> section
+    /// matching <see cref="TelemetryOptions"/>. See <see cref="TelemetryOptions.SectionName"/>.
+    /// </param>
+    /// <param name="configure">
+    /// An optional delegate applied after binding, e.g. to register additional
+    /// instrumentation via <see cref="TelemetryOptions.ConfigureTracing"/>.
+    /// </param>
+    /// <returns>The original <paramref name="services"/> for chaining.</returns>
+    /// <exception cref="InvalidOperationException">
+    /// Thrown when the <c>Telemetry</c> configuration section is missing or empty.
+    /// </exception>
+    /// <exception cref="ValidationException">
+    /// Thrown when the resulting <see cref="TelemetryOptions"/> fail validation,
+    /// e.g. when <see cref="TelemetryOptions.Endpoint"/> is <c>null</c>.
+    /// </exception>
+    /// <example>
+    /// <code>
+    /// services.AddTelemetry(builder.Configuration, o =>
+    /// {
+    ///     o.ConfigureTracing = tracing => tracing.AddSource("MyApp");
+    /// });
+    /// </code>
+    /// </example>
+    public static IServiceCollection AddTelemetry(this IServiceCollection services, IConfiguration configuration, Action<TelemetryOptions>? configure)
     {
         var section = configuration.GetSection(TelemetryOptions.SectionName);
         if (!section.Exists())
@@ -55,6 +90,7 @@ public static class TelemetryServiceCollectionExtensions
 
         var options = new TelemetryOptions();
         section.Bind(options);
+        configure?.Invoke(options);
 
         if (options.Enabled)
         {

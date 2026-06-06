@@ -478,6 +478,60 @@ public class TelemetryServiceCollectionExtensionsTests
         Assert.Null(ex);
     }
 
+    // ── IConfiguration + code callback (combined) ─────────────────────────
+
+    [Fact]
+    public void AddTelemetry_IConfigurationWithConfigure_InvokesCallback()
+    {
+        var invoked = false;
+        var config = ValidConfig(new Dictionary<string, string?> { ["Telemetry:Enabled"] = "true" });
+        var services = NewServices();
+
+        services.AddTelemetry(config, o => o.ConfigureTracing = _ => invoked = true);
+        services.BuildServiceProvider().GetService<TracerProvider>();
+
+        Assert.True(invoked);
+    }
+
+    [Fact]
+    public void AddTelemetry_IConfigurationWithConfigure_CallbackOverridesBoundValue()
+    {
+        // ServiceName is bound from config, then overridden in code.
+        var config = ValidConfig(new Dictionary<string, string?> { ["Telemetry:ServiceName"] = "from-config" });
+        var services = NewServices();
+        TelemetryOptions? captured = null;
+
+        services.AddTelemetry(config, o =>
+        {
+            captured = o;
+            o.ServiceName = "from-code";
+        });
+
+        Assert.Equal("from-code", captured!.ServiceName);
+    }
+
+    [Fact]
+    public void AddTelemetry_IConfigurationWithConfigure_CodeOnlyOptionAppliedOnTopOfConfig()
+    {
+        // Endpoint comes from config (JSON), ConfigureMetrics comes from code.
+        var invoked = false;
+        var config = ValidConfig(new Dictionary<string, string?> { ["Telemetry:Enabled"] = "true" });
+        var services = NewServices();
+
+        services.AddTelemetry(config, o => o.ConfigureMetrics = _ => invoked = true);
+        services.BuildServiceProvider().GetService<MeterProvider>();
+
+        Assert.True(invoked);
+    }
+
+    [Fact]
+    public void AddTelemetry_IConfigurationWithNullConfigure_DoesNotThrow()
+    {
+        var services = NewServices();
+        var ex = Record.Exception(() => services.AddTelemetry(ValidConfig(), configure: null));
+        Assert.Null(ex);
+    }
+
     // ── ShouldInstrument (request filter logic) ───────────────────────────
 
     [Theory]

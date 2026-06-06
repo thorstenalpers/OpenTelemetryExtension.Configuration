@@ -26,7 +26,8 @@ release-notes/                                   # v{VERSION}.md per release
 
 ```csharp
 // IServiceCollection extensions
-services.AddTelemetry(configuration);           // binds "Telemetry" section
+services.AddTelemetry(configuration);                  // binds "Telemetry" section
+services.AddTelemetry(configuration, o => { ... });    // bind + code callback (combined)
 services.AddTelemetry(o => { o.Enabled = true; o.Endpoint = new Uri("..."); });
 ```
 
