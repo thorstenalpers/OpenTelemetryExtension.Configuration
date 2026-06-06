@@ -1,16 +1,16 @@
 [![OpenTelemetryExtension.Configuration](https://raw.githubusercontent.com/thorstenalpers/OpenTelemetryExtension.Configuration/main/assets/banner.png)](https://github.com/thorstenalpers/OpenTelemetryExtension.Configuration)
----
-[![CI](https://github.com/thorstenalpers/OpenTelemetryExtension.Configuration/actions/workflows/ci.yml/badge.svg)](https://github.com/thorstenalpers/OpenTelemetryExtension.Configuration/actions/workflows/ci.yml)
-[![Coverage Status](https://coveralls.io/repos/github/thorstenalpers/OpenTelemetryExtension.Configuration/badge.svg?branch=develop)](https://coveralls.io/github/thorstenalpers/OpenTelemetryExtension.Configuration?branch=develop)
-[![NuGet Version](https://img.shields.io/nuget/v/OpenTelemetryExtension.Configuration.svg)](https://www.nuget.org/packages/OpenTelemetryExtension.Configuration)
-[![NuGet Downloads](https://img.shields.io/nuget/dt/OpenTelemetryExtension.Configuration.svg)](https://www.nuget.org/packages/OpenTelemetryExtension.Configuration)
-[![License](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
+
+[![CI](https://img.shields.io/github/actions/workflow/status/thorstenalpers/OpenTelemetryExtension.Configuration/ci.yml?branch=develop&style=flat-square&logo=githubactions&logoColor=white&label=CI)](https://github.com/thorstenalpers/OpenTelemetryExtension.Configuration/actions/workflows/ci.yml)
+[![Coverage](https://img.shields.io/coverallsCoverage/github/thorstenalpers/OpenTelemetryExtension.Configuration?branch=develop&style=flat-square&logo=coveralls&label=coverage)](https://coveralls.io/github/thorstenalpers/OpenTelemetryExtension.Configuration?branch=develop)
+[![NuGet](https://img.shields.io/nuget/v/OpenTelemetryExtension.Configuration?style=flat-square&logo=nuget&logoColor=white&label=nuget)](https://www.nuget.org/packages/OpenTelemetryExtension.Configuration)
+[![Downloads](https://img.shields.io/nuget/dt/OpenTelemetryExtension.Configuration?style=flat-square&logo=nuget&logoColor=white&label=downloads)](https://www.nuget.org/packages/OpenTelemetryExtension.Configuration)
+[![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](./LICENSE)
 
 Configurable OpenTelemetry setup for .NET applications providing **tracing, metrics, and logging** via OTLP, configurable through code or `appsettings.json`.
 
 ---
 
-## Features
+## ✨ Features
 
 - **One-call setup** — tracing, metrics and logging via a single `AddTelemetry()`, configured from `appsettings.json` or code
 - **All three signals over OTLP** — HTTP/protobuf or gRPC, to any OTLP-compatible backend
@@ -31,52 +31,33 @@ dotnet add package OpenTelemetryExtension.Configuration
 
 ---
 
-## ⚙️ Quick Start
+## 🚀 Quick Start
 
-### 1. Register services
+### 1. Register
 
 ```csharp
 builder.Services.AddTelemetry(builder.Configuration);
 ```
 
----
-
-### 2. Configuration (appsettings.json)
+### 2. Configure (`appsettings.json`)
 
 ```json
 {
   "Telemetry": {
     "Enabled": true,
     "Endpoint": "http://localhost:4318",
-    "ServiceName": "my-api",
-    "ResourceAttributes": {
-      "deployment.environment": "production"
-    }
+    "ServiceName": "my-api"
   }
 }
 ```
 
----
-
-## ✨ Code Configuration (Alternative)
-
-```csharp
-builder.Services.AddTelemetry(o =>
-{
-    o.Endpoint = new Uri("http://localhost:4318");
-    o.ServiceName = "my-api";
-    o.ResourceAttributes = new() { ["deployment.environment"] = "production" };
-    o.SampleRatio = 0.1;
-});
-```
-
-That's it. Tracing, metrics and logging are all exported via OTLP.
+That's it — tracing, metrics and logging are exported via OTLP.
 
 ---
 
-## Configuration Reference
+## ⚙️ Configuration
 
-All options are set under the `Telemetry` key in `appsettings.json`.
+All options live under the `Telemetry` key in `appsettings.json`.
 
 | Property | Type | Default | Description |
 |---|---|---|---|
@@ -85,7 +66,7 @@ All options are set under the `Telemetry` key in `appsettings.json`.
 | `Headers` | `string` | `""` | Exporter headers. Format: `key1=value1,key2=value2`. |
 | `Protocol` | `string` | `HttpProtobuf` | `HttpProtobuf` (port 4318) or `Grpc` (port 4317). |
 | `ServiceName` | `string?` | `null` | Service name shown in the backend. |
-| `ResourceAttributes` | `object` | `{}` | Additional resource attributes, e.g. `{ "deployment.environment": "production", "team": "backend" }`. |
+| `ResourceAttributes` | `object` | `{}` | Extra resource attributes, e.g. `{ "deployment.environment": "production", "team": "backend" }`. |
 | `SampleRatio` | `double` | `1.0` | Fraction of traces to sample. `0.1` = 10%, `1.0` = all. |
 | `EnableTracing` | `bool` | `true` | Enables distributed tracing. |
 | `EnableMetrics` | `bool` | `true` | Enables metrics collection. |
@@ -99,27 +80,42 @@ All options are set under the `Telemetry` key in `appsettings.json`.
 | `IncludeScopes` | `bool` | `true` | Includes log scopes in exported log records. |
 | `IncludeFormattedMessage` | `bool` | `true` | Includes the formatted message in exported log records. |
 
-> `ConfigureTracing`, `ConfigureMetrics` and `ConfigureLogging` callbacks are only available when configuring inline in code.
+> `ConfigureTracing`, `ConfigureMetrics` and `ConfigureLogging` are code-only callbacks — see [Code configuration](#-code-configuration).
 
-### Production example
+### Full example
 
-```json
+Every key with its **default** value (only `Enabled` and `Endpoint` are required to get started):
+
+```jsonc
 {
   "Telemetry": {
-    "Enabled":         true,
-    "Endpoint":        "http://otel-collector:4318",
-    "ServiceName":     "my-api",
-    "ResourceAttributes": {
-      "deployment.environment": "Stage",
-      "team": "backend"
-    }
+    "Enabled": false,                          // master switch — set true to activate
+    "Endpoint": "http://localhost:4318",       // OTLP collector endpoint (required)
+    "Headers": "",                             // exporter headers: "key1=value1,key2=value2"
+    "Protocol": "HttpProtobuf",                // "HttpProtobuf" (4318) or "Grpc" (4317)
+    "ServiceName": null,                        // service name shown in the backend
+    "ResourceAttributes": {},                   // extra attributes, e.g. { "deployment.environment": "production" }
+    "SampleRatio": 1.0,                         // 0.1 = 10% of traces, 1.0 = all
+    "EnableTracing": true,                      // distributed tracing
+    "EnableMetrics": true,                      // metrics collection
+    "EnableLogging": true,                      // log export via OTLP
+    "EnableAspNetCoreInstrumentation": true,    // incoming HTTP requests
+    "EnableHttpClientInstrumentation": true,    // outgoing HttpClient requests
+    "EnableSqlClientInstrumentation": false,    // SQL calls (opt-in)
+    "EnableRuntimeInstrumentation": true,       // GC, memory, thread pool metrics
+    "RecordExceptions": true,                   // exception stack traces on spans
+    "ExcludedPaths": [ "/health" ],             // paths excluded from tracing
+    "IncludeScopes": true,                      // log scopes in exported records
+    "IncludeFormattedMessage": true             // formatted message in exported records
   }
 }
 ```
 
 ---
 
-## Configure in Code
+## 🧩 Code Configuration
+
+Configure entirely in code instead of `appsettings.json`:
 
 ```csharp
 builder.Services.AddTelemetry(o =>
@@ -129,18 +125,15 @@ builder.Services.AddTelemetry(o =>
     o.ResourceAttributes = new() { ["deployment.environment"] = "production" };
     o.SampleRatio     = 0.1;
 
-    // Register additional instrumentation
+    // Code-only: register additional instrumentation
     o.ConfigureTracing = tracing => tracing.AddSource("MyApp");
     o.ConfigureMetrics = metrics => metrics.AddMeter("MyApp");
     o.ConfigureLogging = logging => logging.AddConsole();
 });
 ```
 
-### Configuration + code
-
-Bind the base settings from `appsettings.json` and add code-only options
-(such as `ConfigureTracing`) on top. Both sources are combined — values bound
-from configuration can still be overridden in the callback:
+Or bind `appsettings.json` first and layer code-only options on top — both
+sources are combined, and bound values can still be overridden in the callback:
 
 ```csharp
 builder.Services.AddTelemetry(builder.Configuration, o =>
@@ -153,7 +146,7 @@ builder.Services.AddTelemetry(builder.Configuration, o =>
 
 ---
 
-## Backend Examples
+## 🔌 Backend Examples
 
 See the [infrastructure folder](./infrastructure) for Docker Compose files and Helm charts, and the [sample project](./src/OpenTelemetryExtension.Configuration.Sample) for full `appsettings` configurations.
 
@@ -239,10 +232,10 @@ See the [infrastructure folder](./infrastructure) for Docker Compose files and H
 
 ---
 
-## Contributing
+## 🤝 Contributing
 
 See [CONTRIBUTING.md](./CONTRIBUTING.md).
 
-## Report a Bug
+## 🐛 Report a Bug
 
 [Open an issue](https://github.com/thorstenalpers/OpenTelemetryExtension.Configuration/issues).
