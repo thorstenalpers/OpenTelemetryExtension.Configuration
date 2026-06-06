@@ -146,89 +146,139 @@ builder.Services.AddTelemetry(builder.Configuration, o =>
 
 ---
 
-## 🔌 Backend Examples
+## 🔌 Running Locally with a Backend
 
-See the [infrastructure folder](./infrastructure) for Docker Compose files and Helm charts, and the [sample project](./src/OpenTelemetryExtension.Configuration.Sample) for full `appsettings` configurations.
+The [sample project](./src/OpenTelemetryExtension.Configuration.Sample) ships a
+ready-to-run configuration for every supported backend. Each backend has:
 
-### .NET Aspire Dashboard
+1. an **infrastructure start script** (Docker Compose or Helm) in [`infrastructure/`](./infrastructure),
+2. a **launch profile** that selects the matching `appsettings.<env>.json`,
+3. a **UI** where the exported traces, metrics and logs show up.
 
-```json
-{
-  "Telemetry": {
-    "Endpoint": "http://localhost:18888",
-    "Protocol": "HttpProtobuf"
-  }
-}
-```
+### Steps
 
-### Jaeger
+1. **Start the backend infrastructure** — run the script for your backend (see table).
+   - Docker scripts live in [`infrastructure/docker`](./infrastructure/docker) and need Docker.
+   - Helm scripts live in [`infrastructure/helm`](./infrastructure/helm) and need a local Kubernetes cluster (e.g. k3s in WSL2).
+2. **Run the sample** with the matching profile:
+   ```bash
+   cd src/OpenTelemetryExtension.Configuration.Sample
+   dotnet run --launch-profile "Start Aspire"
+   ```
+   Or pick the profile from the run dropdown in Visual Studio / Rider.
+3. **Generate traffic** — the app opens Swagger at `https://localhost:5073/swagger`; call an endpoint.
+4. **Open the backend UI** (see table) to inspect the telemetry.
 
-```json
-{
-  "Telemetry": {
-    "Endpoint": "http://localhost:4318",
-    "Protocol": "HttpProtobuf"
-  }
-}
-```
+### Backend overview
 
-### SigNoz
+| Backend | Start infrastructure | Launch profile | Backend UI |
+|---|---|---|---|
+| .NET Aspire Dashboard | `infrastructure/docker/docker-install-aspire-dashboard.cmd` *(or Helm: `helm/helm-install-aspire-dashboard.cmd`)* | `Start Aspire` | <http://localhost:31888> |
+| Jaeger | `infrastructure/docker/docker-install-jaeger.cmd` | `Start Jaeger` | <http://localhost:16686> |
+| Grafana Loki *(logs only)* | `infrastructure/docker/docker-install-loki.cmd` | `Start Loki` | <http://localhost:3000> (Grafana, `admin`/`admin`) |
+| OpenObserve | `infrastructure/helm/helm-install-openobserve.cmd` | `Start OpenObserve Http` / `Start OpenObserve Grpc` | <http://localhost:30117> (`admin@web.de`/`admin`) |
+| OpenSearch | `infrastructure/docker/docker-install-opensearch.cmd` | `Start OpenSearch` | <http://localhost:5601> (OpenSearch Dashboards) |
+| SigNoz | `infrastructure/helm/helm-install-signoz.cmd` | `Start SigNoz` | SigNoz frontend service (see `kubectl get svc`) |
 
-```json
-{
-  "Telemetry": {
-    "Endpoint": "http://localhost:50709"
-  }
-}
-```
+> **Tip — viewing logs in the Aspire Dashboard:** after starting the app with the
+> `Start Aspire` profile, open <http://localhost:31888>, then go to the
+> **Structured** (logs), **Traces** or **Metrics** tab. Data appears as soon as
+> you hit a Swagger endpoint.
 
-### OpenSearch
+---
 
-```json
-{
-  "Telemetry": {
-    "Endpoint": "http://localhost:30318",
-    "Protocol": "HttpProtobuf"
-  }
-}
-```
+## ⚙️ Backend Configurations
 
-### Grafana Loki *(logs only)*
+These are the exact `appsettings.<env>.json` files used by the sample's launch profiles.
 
-```json
-{
-  "Telemetry": {
-    "Endpoint":      "http://localhost:3100/otlp",
-    "Protocol":      "HttpProtobuf",
-    "EnableTracing": false,
-    "EnableMetrics": false
-  }
-}
-```
+### .NET Aspire Dashboard — `appsettings.aspire.json`
 
-### OpenObserve — HTTP/protobuf
+The dashboard requires an API key on the OTLP endpoint (`x-otlp-api-key`). The
+gRPC endpoint is exposed on NodePort `31889` (Helm) or host port `31889` (Docker).
 
 ```json
 {
   "Telemetry": {
-    "Endpoint": "http://localhost:30117/api/default",
-    "Protocol": "HttpProtobuf",
-    "Headers":  "Authorization=Basic <base64>,stream-name=default"
-  }
-}
-```
-
-### OpenObserve — gRPC
-
-```json
-{
-  "Telemetry": {
-    "Endpoint": "http://localhost:30118",
     "Protocol": "Grpc",
-    "Headers":  "Authorization=Basic <base64>,organization=default,stream-name=default"
+    "Endpoint": "http://localhost:31889",
+    "Headers": "x-otlp-api-key=aspire"
   }
 }
 ```
+
+### Jaeger — `appsettings.jaeger.json`
+
+```json
+{
+  "Telemetry": {
+    "Protocol": "Grpc",
+    "Endpoint": "http://localhost:4317"
+  }
+}
+```
+
+### Grafana Loki *(logs only)* — `appsettings.loki.json`
+
+```json
+{
+  "Telemetry": {
+    "Protocol": "HttpProtobuf",
+    "Endpoint": "http://localhost:3100/otlp",
+    "Headers": ""
+  }
+}
+```
+
+### SigNoz — `appsettings.signoz.json`
+
+```json
+{
+  "Telemetry": {
+    "Protocol": "HttpProtobuf",
+    "Endpoint": "http://localhost:50709",
+    "Headers": ""
+  }
+}
+```
+
+### OpenSearch — `appsettings.opensearch.json`
+
+```json
+{
+  "Telemetry": {
+    "Protocol": "HttpProtobuf",
+    "Endpoint": "http://localhost:30318",
+    "Headers": ""
+  }
+}
+```
+
+### OpenObserve — HTTP/protobuf — `appsettings.openobserve-http.json`
+
+```json
+{
+  "Telemetry": {
+    "Protocol": "HttpProtobuf",
+    "Endpoint": "http://localhost:30117/api/default",
+    "Headers": "Authorization=Basic <base64>,stream-name=default"
+  }
+}
+```
+
+### OpenObserve — gRPC — `appsettings.openobserve-grpc.json`
+
+```json
+{
+  "Telemetry": {
+    "Protocol": "Grpc",
+    "Endpoint": "http://localhost:30118",
+    "Headers": "Authorization=Basic <base64>,organization=default,stream-name=default"
+  }
+}
+```
+
+> The `Authorization` header is `Basic base64(email:password)`. Replace `<base64>`
+> with your own credentials.
 
 ---
 

@@ -1,0 +1,232 @@
+image:
+  registry: mcr.microsoft.com
+  repository: dotnet/aspire-dashboard
+  tag: 13.3.0 # renovate docker mcr.microsoft.com/dotnet/aspire-dashboard
+  pullPolicy: "IfNotPresent"
+
+revisionHistoryLimit: 1
+probes:
+  liveness: 
+    # -- whether to enable liveness probe
+    enabled: true
+    path: /health
+  readiness:
+    # -- whether to enable readiness probe
+    enabled: true
+    path: /health
+  startup: 
+    # -- whether to enable startup probe
+    enabled: true
+    path: /health
+
+ui:
+  # -- the port the dashboard listens on for its ui
+  port: 18888
+  auth:
+    # -- the authMode for the ui, currently only Unsecured is supported
+    authMode: Unsecured
+  ingress:
+    # -- whether to enable the ingress for the dashboard
+    enabled: false
+    # -- the ingressclassname for the ingress, default: nginx
+    ingressClassName: "nginx"
+    # -- the host the ingress should lsiten for
+    host: ~
+    # -- tls configuration to be applied on the ingress
+    tls: []
+      # - hosts:
+      #     - aspire.example.com
+      #   secretName: aspire-tls
+    # -- labels to place on the ingress
+    labels: {}
+    # -- annotations to place on the ingress
+    annotations: {}
+  route:
+    enabled: false
+    annotations: {}
+    labels: {}
+    hostnames: []
+    parentRefs: []
+
+otlp:
+  # -- the port the dashboards listens on for otlp
+  port: 18889
+  auth:
+    # -- auth mode to use for otlp, currently one of [ApiKey, Unsecured]
+    authMode: ApiKey
+    # -- the api key used if no secret is set and authmode is ApiKey
+    apiKey: aspire
+    # -- the secret to use as the ApiKey
+    apiKeySecretName: ~
+    # -- the key within the secret to use as the ApiKey
+    apiKeySecretKey: token
+  ingress:
+    # -- whether to enable the ingress for the otlp service
+    enabled: false
+    # -- the ingressclassname for the ingress, default: nginx
+    ingressClassName: "nginx"
+    # -- the host the ingress should lsiten for
+    host: ~
+    # -- tls configuration to be applied on the ingress
+    tls: []
+      # - hosts:
+      #     - in.aspire.example.com
+      #   secretName: aspire-in-tls
+    # -- labels to place on the ingress
+    labels: {}
+    # -- annotations to place on the ingress
+    annotations: {}
+  route:
+    enabled: false
+    annotations: {}
+    labels: {}
+    hostnames: []
+    parentRefs: []
+    
+  clusterip:
+    # -- whether to enable a clusterip for the otlp service
+    enabled: false
+    # -- the port the service should use
+    port: 8080
+    # -- labels to place on the clusterip
+    labels: {}
+
+securityContext:
+  pod: {}
+  container: {}
+
+resources: {}
+  # requests:
+  #   cpu: 350m
+  #   memory: 0.512Gi
+  # limits:
+  #   cpu: 1500m
+  #   memory: 1.5Gi
+
+env:
+  - name: DASHBOARD__OTLP__HTTP__ENDPOINTURL
+    value: "http://0.0.0.0:18890"
+  - name: DASHBOARD__OTLP__GRPC__ENDPOINTURL
+    value: "http://0.0.0.0:18889"
+    
+labels: {}
+
+config:
+  # -- whether to opt out of telemetry
+  telemetryOptOut: false
+  # -- the limits for the telemetry data
+  limits:
+    # -- the maximum number of traces to keep in memory
+    maxTraceCount: ~
+    # -- the maximum number of logs to keep in memory
+    maxLogCount: ~
+    # -- the maximum number of metrics to keep in memory
+    maxMetricCount: ~
+    # -- the maximum number of attributes to keep in memory
+    maxAttributeCount: ~
+    # -- the maximum length of an attribute value
+    maxAttributeLength: ~
+    # -- the maximum number of span events to keep in memory
+    maxSpanEventCount: ~
+
+# Sub Chart for the OpenTelemetry Collector
+opentelemetry-collector:
+  # -- activate the opentelemetry collector
+  enabled: false
+
+  revisionHistoryLimit: 1
+  
+  image:
+    repository: otel/opentelemetry-collector-k8s
+  mode: daemonset
+
+  presets:
+    logsCollection:
+      enabled: true
+      includeCollectorLogs: true
+    kubeletMetrics:
+      enabled: true
+    # clusterMetrics:
+    #   enabled: true
+    kubernetesEvents:
+      enabled: true
+    hostMetrics:
+      enabled: true
+    kubernetesAttributes:
+      enabled: true
+      extractAllPodLabels: true
+      extractAllPodAnnotations: true
+
+  config:
+    exporters:
+      otlp:
+        endpoint: "http://{{ .Release.Name }}-otlp.{{ .Release.Namespace }}.svc.cluster.local:8080"
+        headers:
+          x-otlp-api-key: aspire
+        tls:
+          insecure: true
+    service:
+      pipelines:
+        logs:
+          exporters:
+            - otlp
+          processors:
+            - memory_limiter
+            - k8sattributes
+            - resource/all
+            - batch
+        traces:
+          exporters:
+            - otlp
+          processors:
+            - memory_limiter
+            - k8sattributes
+            - resource/all
+            - batch
+        metrics:
+          exporters:
+            - otlp
+          processors:
+            - memory_limiter
+            - k8sattributes
+            - resource/all
+            - batch
+
+    receivers:
+      jaeger: {}
+      prometheus: {}
+      zipkin: {}
+    processors:
+      resourcedetection/system:
+        detectors: [env, system, gcp, eks]
+        timeout: 2s
+        override: false
+      resource/all:
+        attributes:
+          - action: insert
+            key: service.name
+            from_attribute: k8s.container.name
+      batch:
+        send_batch_size: 10000
+        timeout: 200ms
+      memory_limiter:
+        check_interval: 3s
+        limit_mib: 1500
+        spike_limit_mib: 500
+      k8sattributes:
+        auth_type: "serviceAccount"
+        passthrough: true
+        filter:
+          node_from_env_var: K8S_NODE_NAME
+        extract:
+          metadata:
+            - k8s.pod.name
+            - k8s.pod.uid
+            - k8s.deployment.name
+            - k8s.container.name
+            - k8s.namespace.name
+            - k8s.node.name
+            - k8s.pod.start_time
+
+
+          

@@ -1,0 +1,19 @@
+services:
+  aspire-dashboard:
+    image: mcr.microsoft.com/dotnet/aspire-dashboard:13.3.0
+    container_name: aspire-dashboard
+    ports:
+      - "31888:18888"   # UI
+      - "31889:18889"   # OTLP/gRPC
+      - "31890:18890"   # OTLP/HTTP
+    environment:
+      # UI is reachable without login
+      - DASHBOARD__FRONTEND__AUTHMODE=Unsecured
+      # OTLP ingestion requires the api key (header: x-otlp-api-key)
+      - DASHBOARD__OTLP__AUTHMODE=ApiKey
+      - DASHBOARD__OTLP__PRIMARYAPIKEY=aspire
+      # explicit endpoint bindings (mirror the helm chart)
+      - DASHBOARD__FRONTEND__ENDPOINTURLS=http://0.0.0.0:18888
+      - DASHBOARD__OTLP__GRPC__ENDPOINTURL=http://0.0.0.0:18889
+      - DASHBOARD__OTLP__HTTP__ENDPOINTURL=http://0.0.0.0:18890
+    restart: unless-stopped
