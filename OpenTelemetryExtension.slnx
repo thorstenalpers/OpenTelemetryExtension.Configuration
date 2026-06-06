@@ -9,7 +9,7 @@
   </Folder>
   <Folder Name="/.claude/" />
   <Folder Name="/.claude/commands/">
-    <File Path=".claude/commands/release.md" />
+    <File Path=".claude/commands/auto-release.md" />
   </Folder>
   <Folder Name="/.github/">
     <File Path=".github/copilot-instructions.md" />
@@ -20,19 +20,24 @@
   </Folder>
   <Folder Name="/Infrastructure/" />
   <Folder Name="/Infrastructure/Docker/">
+    <File Path="infrastructure/docker/docker-compose.aspire-dashboard.yml" />
     <File Path="infrastructure/docker/docker-compose.jaeger.yml" />
     <File Path="infrastructure/docker/docker-compose.loki.yml" />
     <File Path="infrastructure/docker/docker-compose.openobserve.yml" />
     <File Path="infrastructure/docker/docker-compose.opensearch.yml" />
+    <File Path="infrastructure/docker/docker-install-aspire-dashboard.cmd" />
     <File Path="infrastructure/docker/docker-install-jaeger.cmd" />
     <File Path="infrastructure/docker/docker-install-loki.cmd" />
     <File Path="infrastructure/docker/docker-install-openobserve.cmd" />
     <File Path="infrastructure/docker/docker-install-opensearch.cmd" />
   </Folder>
   <Folder Name="/Infrastructure/Helm/">
+    <File Path="infrastructure/helm/helm-install-aspire-dashboard.cmd" />
     <File Path="infrastructure/helm/helm-install-openobserve.cmd" />
     <File Path="infrastructure/helm/helm-install-signoz.cmd" />
     <File Path="infrastructure/helm/helm-install-sqlserver.cmd" />
+    <File Path="infrastructure/helm/nodeports.aspire-dashboard.yaml" />
+    <File Path="infrastructure/helm/values.aspire-dashboard.yaml" />
   </Folder>
   <Folder Name="/Infrastructure/Helm/chart-openobserve/">
     <File Path="infrastructure/helm/chart-openobserve/.helmignore" />
