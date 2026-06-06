@@ -1,5 +1,5 @@
 <Solution>
-  <Folder Name="/Documentation/">
+  <Folder Name="/Docs/">
     <File Path="../AGENTS.md" />
     <File Path="../CLAUDE.md" />
     <File Path="../CODE_OF_CONDUCT.md" />
