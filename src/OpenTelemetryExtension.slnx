@@ -1,10 +1,53 @@
 <Solution>
   <Folder Name="/Solution Items/">
+    <File Path="../AGENTS.md" />
     <File Path="../CLAUDE.md" />
     <File Path="../CODE_OF_CONDUCT.md" />
     <File Path="../CONTRIBUTING.md" />
     <File Path="../LICENSE" />
     <File Path="../README.md" />
+  </Folder>
+  <Folder Name="/Infrastructure/Docker/">
+    <File Path="../infrastructure/docker/docker-compose.jaeger.yml" />
+    <File Path="../infrastructure/docker/docker-compose.loki.yml" />
+    <File Path="../infrastructure/docker/docker-compose.openobserve.yml" />
+    <File Path="../infrastructure/docker/docker-compose.opensearch.yml" />
+    <File Path="../infrastructure/docker/docker-install-jaeger.cmd" />
+    <File Path="../infrastructure/docker/docker-install-loki.cmd" />
+    <File Path="../infrastructure/docker/docker-install-openobserve.cmd" />
+    <File Path="../infrastructure/docker/docker-install-opensearch.cmd" />
+  </Folder>
+  <Folder Name="/Infrastructure/Helm/">
+    <File Path="../infrastructure/helm/helm-install-openobserve.cmd" />
+    <File Path="../infrastructure/helm/helm-install-signoz.cmd" />
+    <File Path="../infrastructure/helm/helm-install-sqlserver.cmd" />
+  </Folder>
+  <Folder Name="/Infrastructure/Helm/chart-openobserve/">
+    <File Path="../infrastructure/helm/chart-openobserve/.helmignore" />
+    <File Path="../infrastructure/helm/chart-openobserve/Chart.yaml" />
+    <File Path="../infrastructure/helm/chart-openobserve/values.yaml" />
+  </Folder>
+  <Folder Name="/Infrastructure/Helm/chart-openobserve/templates/">
+    <File Path="../infrastructure/helm/chart-openobserve/templates/NOTES.txt" />
+    <File Path="../infrastructure/helm/chart-openobserve/templates/_helpers.tpl" />
+    <File Path="../infrastructure/helm/chart-openobserve/templates/deployment.yaml" />
+    <File Path="../infrastructure/helm/chart-openobserve/templates/hpa.yaml" />
+    <File Path="../infrastructure/helm/chart-openobserve/templates/httproute.yaml" />
+    <File Path="../infrastructure/helm/chart-openobserve/templates/ingress.yaml" />
+    <File Path="../infrastructure/helm/chart-openobserve/templates/nodeport.yaml" />
+    <File Path="../infrastructure/helm/chart-openobserve/templates/pvc.yaml" />
+    <File Path="../infrastructure/helm/chart-openobserve/templates/service.yaml" />
+    <File Path="../infrastructure/helm/chart-openobserve/templates/serviceaccount.yaml" />
+  </Folder>
+  <Folder Name="/Infrastructure/Helm/chart-sqlserver/">
+    <File Path="../infrastructure/helm/chart-sqlserver/.helmignore" />
+    <File Path="../infrastructure/helm/chart-sqlserver/Chart.yaml" />
+    <File Path="../infrastructure/helm/chart-sqlserver/values.yaml" />
+  </Folder>
+  <Folder Name="/Infrastructure/Helm/chart-sqlserver/templates/">
+    <File Path="../infrastructure/helm/chart-sqlserver/templates/_helpers.tpl" />
+    <File Path="../infrastructure/helm/chart-sqlserver/templates/deployment.yaml" />
+    <File Path="../infrastructure/helm/chart-sqlserver/templates/service.yaml" />
   </Folder>
   <Project Path="OpenTelemetryExtension.Configuration.Sample/OpenTelemetryExtension.Configuration.Sample.csproj" DefaultStartup="true" />
   <Project Path="OpenTelemetryExtension.Configuration/OpenTelemetryExtension.Configuration.csproj" />
