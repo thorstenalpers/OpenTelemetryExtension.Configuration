@@ -14,7 +14,7 @@
 
 ## Reporting
 
-If you experience or witness unacceptable behavior, please report it by opening an issue at https://github.com/thorstenalpers/OpenTelemetryExtension.Configuration/issues. All reports will be reviewed and handled appropriately.
+If you experience or witness unacceptable behavior, please report it by [opening an issue](https://github.com/thorstenalpers/OpenTelemetryExtension.Configuration/issues). All reports will be reviewed and handled appropriately.
 
 ## Enforcement
 
