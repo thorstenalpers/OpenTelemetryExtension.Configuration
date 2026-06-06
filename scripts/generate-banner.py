@@ -11,7 +11,7 @@ LOGO = ROOT / "src" / "OpenTelemetryExtension.Configuration" / "logo.png"
 OUT = ROOT / "assets" / "banner.png"
 
 TEXT = "OpenTelemetryExtension.Configuration"
-TEXT_COLOR = (47, 129, 214, 255)   # #2F81D6 — readable on light & dark
+TEXT_COLOR = (26, 75, 140, 255)    # #1A4B8C — darker blue, matches logo
 SCALE = 2                          # supersample for crisp text
 LOGO_H = 72
 GAP = 22
