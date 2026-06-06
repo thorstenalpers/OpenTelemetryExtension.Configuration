@@ -15,20 +15,23 @@ using OpenTelemetry.Trace;
 /// <code>
 /// "Telemetry": {
 ///   "Endpoint":                        "http://localhost:4318",
-///   "Enabled":                         true,
+///   "Enabled":                         false,
 ///   "Headers":                         "",
 ///   "Protocol":                        "HttpProtobuf",
 ///   "ServiceName":                     null,
-///   "EnvironmentName":                 null,
+///   "ResourceAttributes":              { "deployment.environment": "production", "team": "backend" },
+///   "SampleRatio":                     1.0,
 ///   "EnableTracing":                   true,
 ///   "EnableMetrics":                   true,
 ///   "EnableLogging":                   true,
 ///   "EnableAspNetCoreInstrumentation": true,
 ///   "EnableHttpClientInstrumentation": true,
-///   "EnableSqlClientInstrumentation":  true,
+///   "EnableSqlClientInstrumentation":  false,
 ///   "EnableRuntimeInstrumentation":    true,
 ///   "RecordExceptions":                true,
-///   "ExcludeHealthChecks":             true
+///   "ExcludedPaths":                   ["/health"],
+///   "IncludeScopes":                   true,
+///   "IncludeFormattedMessage":         true
 /// }
 /// </code>
 /// </example>
@@ -40,9 +43,9 @@ public sealed class TelemetryOptions
     /// <summary>
     /// Whether telemetry is enabled at all.
     /// If <c>false</c>, no OpenTelemetry services are registered.
-    /// Default: <c>true</c>
+    /// Default: <c>false</c> — explicit opt-in required.
     /// </summary>
-    public bool Enabled { get; set; } = true;
+    public bool Enabled { get; set; } = false;
 
     /// <summary>
     /// OTLP endpoint for logs, traces and metrics.
@@ -62,9 +65,9 @@ public sealed class TelemetryOptions
     /// <summary>
     /// OTLP export protocol.
     /// Valid values: <c>HttpProtobuf</c> (port 4318), <c>Grpc</c> (port 4317).
-    /// Default: <c>Grpc</c>
+    /// Default: <c>HttpProtobuf</c> — works through standard HTTP proxies and firewalls without extra gRPC configuration.
     /// </summary>
-    public OtlpExportProtocol Protocol { get; set; } = OtlpExportProtocol.Grpc;
+    public OtlpExportProtocol Protocol { get; set; } = OtlpExportProtocol.HttpProtobuf;
 
     /// <summary>
     /// Logical service name reported to the telemetry backend.
@@ -73,11 +76,20 @@ public sealed class TelemetryOptions
     public string? ServiceName { get; set; } = null;
 
     /// <summary>
-    /// Environment name reported as <c>deployment.environment</c> resource attribute.
-    /// Example: <c>production</c>, <c>staging</c>
-    /// Default: <c>null</c>
+    /// Additional OpenTelemetry resource attributes added alongside <see cref="ServiceName"/>.
+    /// Use <c>deployment.environment</c> to report the environment.
+    /// Example: <c>{ "deployment.environment": "production", "team": "backend" }</c>
+    /// Default: <c>{}</c>
     /// </summary>
-    public string? EnvironmentName { get; set; } = null;
+    public Dictionary<string, string> ResourceAttributes { get; set; } = [];
+
+    /// <summary>
+    /// Fraction of traces to sample. <c>1.0</c> samples everything, <c>0.1</c> samples 10%.
+    /// Uses <c>ParentBased(TraceIdRatioBased)</c> sampler.
+    /// Default: <c>1.0</c>
+    /// </summary>
+    [Range(0.0, 1.0)]
+    public double SampleRatio { get; set; } = 1.0;
 
     /// <summary>
     /// Whether distributed tracing is enabled.
@@ -111,9 +123,9 @@ public sealed class TelemetryOptions
 
     /// <summary>
     /// Whether SQL database calls via <c>SqlClient</c> are instrumented.
-    /// Default: <c>true</c>
+    /// Default: <c>false</c> — opt-in, as not all applications use SQL.
     /// </summary>
-    public bool EnableSqlClientInstrumentation { get; set; } = true;
+    public bool EnableSqlClientInstrumentation { get; set; } = false;
 
     /// <summary>
     /// Whether .NET runtime metrics (GC, memory, thread pool) are collected.
@@ -129,11 +141,22 @@ public sealed class TelemetryOptions
     public bool RecordExceptions { get; set; } = true;
 
     /// <summary>
-    /// Whether <c>/health</c> endpoints are excluded from tracing.
-    /// Recommended in production to reduce telemetry noise.
+    /// Request paths excluded from tracing. Matched as path prefixes per segment.
+    /// Default: <c>["/health"]</c>
+    /// </summary>
+    public string[] ExcludedPaths { get; set; } = ["/health"];
+
+    /// <summary>
+    /// Whether log scopes are included in exported log records.
     /// Default: <c>true</c>
     /// </summary>
-    public bool ExcludeHealthChecks { get; set; } = true;
+    public bool IncludeScopes { get; set; } = true;
+
+    /// <summary>
+    /// Whether the formatted log message is included in exported log records.
+    /// Default: <c>true</c>
+    /// </summary>
+    public bool IncludeFormattedMessage { get; set; } = true;
 
     /// <summary>
     /// Optional callback to register additional tracing instrumentation.

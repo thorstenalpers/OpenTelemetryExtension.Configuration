@@ -2,26 +2,27 @@
 
 	<PropertyGroup>
 		<TargetFrameworks>netstandard2.0;net10.0</TargetFrameworks>
-		<Nullable>enable</Nullable>
-		<Version>1.0.2</Version>
-		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+		<Version>1.1.0</Version>
+		<GeneratePackageOnBuild>false</GeneratePackageOnBuild>
 		<GenerateDocumentationFile>true</GenerateDocumentationFile>
-		<LangVersion>latest</LangVersion>
-		<EnforceCodeStyleInBuild>True</EnforceCodeStyleInBuild>
-		<AnalysisLevel>latest</AnalysisLevel>
-		<EnableNETAnalyzers>True</EnableNETAnalyzers>
 
 		<PackageId>OpenTelemetryExtension.Configuration</PackageId>
 		<Authors>Thorsten Alpers</Authors>
-		<Copyright>Copyright 2026</Copyright>
-		<Description>Configurable OpenTelemetry setup for ASP.NET Core via appsettings.json — tracing, metrics and logging with a single AddTelemetry() call.</Description>
+		<Copyright>Copyright © $([System.DateTime]::Now.Year) Thorsten Alpers</Copyright>
+		<Description>Configurable OpenTelemetry setup for .NET applications providing tracing, metrics, and logging via OTLP, configurable through code or appsettings.json.</Description>
 		<PackageTags>OpenTelemetry;Otel;Tracing;Traces;Metrics;Logs;Logging;OTLP;ASP.NET Core;appsettings;Configuration;Instrumentation;Telemetry;HttpClient;SqlClient;gRPC</PackageTags>
 		<PackageProjectUrl>https://github.com/thorstenalpers/OpenTelemetryExtension.Configuration</PackageProjectUrl>
 		<RepositoryUrl>https://github.com/thorstenalpers/OpenTelemetryExtension.Configuration</RepositoryUrl>
+		<RepositoryType>git</RepositoryType>
 		<PackageLicenseExpression>MIT</PackageLicenseExpression>
 		<PackageIcon>logo.png</PackageIcon>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
+		<PackageReleaseNotes>https://github.com/thorstenalpers/OpenTelemetryExtension.Configuration/releases</PackageReleaseNotes>
 	</PropertyGroup>
+
+	<ItemGroup>
+		<InternalsVisibleTo Include="OpenTelemetryExtension.Configuration.Tests" />
+	</ItemGroup>
 
 	<ItemGroup>
 		<PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.15.3" />
@@ -44,10 +45,6 @@
 		<None Include="../../LICENSE" Visible="false">
 			<Pack>true</Pack>
 			<PackagePath>/LICENSE</PackagePath>
-		</None>
-		<None Include="../../THIRD_PARTY_LICENSES.md" Visible="false">
-			<Pack>true</Pack>
-			<PackagePath>/THIRD_PARTY_LICENSES.md</PackagePath>
 		</None>
 	</ItemGroup>
 

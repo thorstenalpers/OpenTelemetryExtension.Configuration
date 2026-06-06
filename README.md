@@ -1,219 +1,291 @@
-# OpenTelemetryExtension.Configuration
+[![OpenTelemetryExtension.Configuration](https://raw.githubusercontent.com/thorstenalpers/OpenTelemetryExtension.Configuration/main/assets/banner.png)](https://github.com/thorstenalpers/OpenTelemetryExtension.Configuration)
 
-[![.NET Standard 2.0](https://img.shields.io/badge/.NET%20Standard-2.0-blue)](#)
-[![License](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
-[![NuGet Version](https://img.shields.io/nuget/v/OpenTelemetryExtension.Configuration.svg)](https://www.nuget.org/packages/OpenTelemetryExtension.Configuration)
-[![NuGet Downloads](https://img.shields.io/nuget/dt/OpenTelemetryExtension.Configuration.svg)](https://www.nuget.org/packages/OpenTelemetryExtension.Configuration)
-[![Coverage Status](https://coveralls.io/repos/github/thorstenalpers/OpenTelemetryExtension.Configuration/badge.svg?branch=develop)](https://coveralls.io/github/thorstenalpers/OpenTelemetryExtension.Configuration?branch=develop)
-[![CI Tests](https://github.com/thorstenalpers/OpenTelemetryExtension.Configuration/actions/workflows/ci.yml/badge.svg)](https://github.com/thorstenalpers/OpenTelemetryExtension.Configuration/actions/workflows/ci.yml)
-[![Star this repo](https://img.shields.io/github/stars/thorstenalpers/OpenTelemetryExtension.Configuration.svg?style=social&label=Star&maxAge=60)](https://github.com/thorstenalpers/OpenTelemetryExtension.Configuration)
+[![CI](https://img.shields.io/github/actions/workflow/status/thorstenalpers/OpenTelemetryExtension.Configuration/ci.yml?branch=develop&style=flat-square&logo=githubactions&logoColor=white&label=CI)](https://github.com/thorstenalpers/OpenTelemetryExtension.Configuration/actions/workflows/ci.yml)
+[![Coverage](https://img.shields.io/coverallsCoverage/github/thorstenalpers/OpenTelemetryExtension.Configuration?branch=develop&style=flat-square&logo=coveralls&label=coverage)](https://coveralls.io/github/thorstenalpers/OpenTelemetryExtension.Configuration?branch=develop)
+[![NuGet](https://img.shields.io/nuget/v/OpenTelemetryExtension.Configuration?style=flat-square&logo=nuget&logoColor=white&label=nuget)](https://www.nuget.org/packages/OpenTelemetryExtension.Configuration)
+[![Downloads](https://img.shields.io/nuget/dt/OpenTelemetryExtension.Configuration?style=flat-square&logo=nuget&logoColor=white&label=downloads)](https://www.nuget.org/packages/OpenTelemetryExtension.Configuration)
+[![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](./LICENSE)
 
-Configurable OpenTelemetry setup for ASP.NET Core via appsettings.json — tracing, metrics and logging with a single AddTelemetry() call.
+Configurable OpenTelemetry setup for .NET applications providing **tracing, metrics, and logging** via OTLP, configurable through code or `appsettings.json`.
 
 ---
 
-## ⭐ Features
+## ✨ Features
 
-* **Tracing:** ASP.NET Core, HttpClient and SqlClient instrumentation out of the box.
-* **Metrics:** ASP.NET Core, HttpClient and .NET runtime metrics.
-* **Logging:** Structured log export via OpenTelemetry Protocol (OTLP).
-* **Flexible configuration:** Bind from `appsettings.json` or configure inline in code.
-* **Extensible:** Register custom instrumentation via `ConfigureTracing`, `ConfigureMetrics` and `ConfigureLogging` callbacks.
-* **Protocol support:** HTTP/protobuf (port 4318) and gRPC (port 4317).
+- **One-call setup** — tracing, metrics and logging via a single `AddTelemetry()`, configured from `appsettings.json` or code
+- **All three signals over OTLP** — HTTP/protobuf or gRPC, to any OTLP-compatible backend
+- **Built-in instrumentation** — ASP.NET Core, `HttpClient`, SQL Client and .NET runtime metrics, each toggleable
+- **Sensible defaults** — sampling, health-check path exclusion and exception recording work out of the box
+- **Startup validation** — misconfiguration fails fast with a clear error
+- **Extensible** — `ConfigureTracing`/`ConfigureMetrics`/`ConfigureLogging` hooks for custom sources, meters and providers
+- **Broad target support** — `netstandard2.0` and `net10.0`
 
 ---
 
-## 🚀 Getting Started
 
-### Installation
+## 📦 Installation
 
-Install via NuGet:
-
-```shell
+```bash
 dotnet add package OpenTelemetryExtension.Configuration
 ```
 
-### Register in Service Collection
+---
 
-#### Option A — via `appsettings.json`
+## 🚀 Quick Start
+
+### 1. Register
 
 ```csharp
 builder.Services.AddTelemetry(builder.Configuration);
 ```
 
+### 2. Configure (`appsettings.json`)
+
 ```json
 {
   "Telemetry": {
+    "Enabled": true,
     "Endpoint": "http://localhost:4318",
-    "ServiceName": "my-api",
-    "EnvironmentName": "production"
+    "ServiceName": "my-api"
   }
 }
 ```
 
-#### Option B — inline in code
+That's it — tracing, metrics and logging are exported via OTLP.
+
+---
+
+## ⚙️ Configuration
+
+All options live under the `Telemetry` key in `appsettings.json`.
+
+| Property | Type | Default | Description |
+|---|---|---|---|
+| `Enabled` | `bool` | `false` | Must be `true` to activate telemetry. |
+| `Endpoint` | `Uri` | *(required)* | OTLP collector endpoint, e.g. `http://localhost:4318`. |
+| `Headers` | `string` | `""` | Exporter headers. Format: `key1=value1,key2=value2`. |
+| `Protocol` | `string` | `HttpProtobuf` | `HttpProtobuf` (port 4318) or `Grpc` (port 4317). |
+| `ServiceName` | `string?` | `null` | Service name shown in the backend. |
+| `ResourceAttributes` | `object` | `{}` | Extra resource attributes, e.g. `{ "deployment.environment": "production", "team": "backend" }`. |
+| `SampleRatio` | `double` | `1.0` | Fraction of traces to sample. `0.1` = 10%, `1.0` = all. |
+| `EnableTracing` | `bool` | `true` | Enables distributed tracing. |
+| `EnableMetrics` | `bool` | `true` | Enables metrics collection. |
+| `EnableLogging` | `bool` | `true` | Enables log export via OTLP. |
+| `EnableAspNetCoreInstrumentation` | `bool` | `true` | Instruments incoming HTTP requests. |
+| `EnableHttpClientInstrumentation` | `bool` | `true` | Instruments outgoing `HttpClient` requests. |
+| `EnableSqlClientInstrumentation` | `bool` | `false` | Instruments SQL calls. Opt-in — not all apps use SQL. |
+| `EnableRuntimeInstrumentation` | `bool` | `true` | Collects GC, memory and thread pool metrics. |
+| `RecordExceptions` | `bool` | `true` | Records exception stack traces on spans. |
+| `ExcludedPaths` | `string[]` | `["/health"]` | Paths excluded from tracing. |
+| `IncludeScopes` | `bool` | `true` | Includes log scopes in exported log records. |
+| `IncludeFormattedMessage` | `bool` | `true` | Includes the formatted message in exported log records. |
+
+> `ConfigureTracing`, `ConfigureMetrics` and `ConfigureLogging` are code-only callbacks — see [Code configuration](#-code-configuration).
+
+### Full example
+
+Every key with its **default** value (only `Enabled` and `Endpoint` are required to get started):
+
+```jsonc
+{
+  "Telemetry": {
+    "Enabled": false,                          // master switch — set true to activate
+    "Endpoint": "http://localhost:4318",       // OTLP collector endpoint (required)
+    "Headers": "",                             // exporter headers: "key1=value1,key2=value2"
+    "Protocol": "HttpProtobuf",                // "HttpProtobuf" (4318) or "Grpc" (4317)
+    "ServiceName": null,                        // service name shown in the backend
+    "ResourceAttributes": {},                   // extra attributes, e.g. { "deployment.environment": "production" }
+    "SampleRatio": 1.0,                         // 0.1 = 10% of traces, 1.0 = all
+    "EnableTracing": true,                      // distributed tracing
+    "EnableMetrics": true,                      // metrics collection
+    "EnableLogging": true,                      // log export via OTLP
+    "EnableAspNetCoreInstrumentation": true,    // incoming HTTP requests
+    "EnableHttpClientInstrumentation": true,    // outgoing HttpClient requests
+    "EnableSqlClientInstrumentation": false,    // SQL calls (opt-in)
+    "EnableRuntimeInstrumentation": true,       // GC, memory, thread pool metrics
+    "RecordExceptions": true,                   // exception stack traces on spans
+    "ExcludedPaths": [ "/health" ],             // paths excluded from tracing
+    "IncludeScopes": true,                      // log scopes in exported records
+    "IncludeFormattedMessage": true             // formatted message in exported records
+  }
+}
+```
+
+---
+
+## 🧩 Code Configuration
+
+Configure entirely in code instead of `appsettings.json`:
 
 ```csharp
 builder.Services.AddTelemetry(o =>
 {
     o.Endpoint        = new Uri("http://localhost:4318");
     o.ServiceName     = "my-api";
-    o.EnvironmentName = "production";
-});
-```
+    o.ResourceAttributes = new() { ["deployment.environment"] = "production" };
+    o.SampleRatio     = 0.1;
 
----
-
-## ⚙️ Configuration Reference
-
-All options can be set via `appsettings.json` under the `Telemetry` key.
-
-| Property | Type | Default | Description |
-|---|---|---|---|
-| `Enabled` | `bool` | `true` | Disables all telemetry when `false`. |
-| `Endpoint` | `Uri` | — *(required)* | OTLP collector endpoint, e.g. `http://localhost:4318`. |
-| `Headers` | `string` | `""` | Exporter headers, e.g. `Authorization=Basic ...`. Format: `key1=value1,key2=value2`. |
-| `Protocol` | `string` | `Grpc` | OTLP protocol. Valid values: `HttpProtobuf`, `Grpc`. |
-| `ServiceName` | `string?` | `null` | Service name reported to the backend. |
-| `EnvironmentName` | `string?` | `null` | Reported as `deployment.environment` resource attribute. |
-| `EnableTracing` | `bool` | `true` | Enables distributed tracing. |
-| `EnableMetrics` | `bool` | `true` | Enables metrics collection. |
-| `EnableLogging` | `bool` | `true` | Enables log export. |
-| `EnableAspNetCoreInstrumentation` | `bool` | `true` | Instruments incoming HTTP requests. |
-| `EnableHttpClientInstrumentation` | `bool` | `true` | Instruments outgoing `HttpClient` requests. |
-| `EnableSqlClientInstrumentation` | `bool` | `true` | Instruments SQL database calls. |
-| `EnableRuntimeInstrumentation` | `bool` | `true` | Collects GC, memory and thread pool metrics. |
-| `RecordExceptions` | `bool` | `true` | Records exceptions with stack traces on spans. |
-| `ExcludeHealthChecks` | `bool` | `true` | Excludes `/health` endpoints from tracing. |
-
-> **Note:** `ConfigureTracing`, `ConfigureMetrics` and `ConfigureLogging` callbacks are only available when configuring inline in code — they cannot be set via `appsettings.json`.
-
----
-
-## 🔌 Custom Instrumentation
-
-Register additional instrumentation libraries via the callbacks:
-
-```csharp
-builder.Services.AddTelemetry(o =>
-{
-    o.Endpoint = new Uri("http://localhost:4318");
-
-    // e.g. MySQL, Redis, MongoDB, ...
+    // Code-only: register additional instrumentation
     o.ConfigureTracing = tracing => tracing.AddSource("MyApp");
     o.ConfigureMetrics = metrics => metrics.AddMeter("MyApp");
     o.ConfigureLogging = logging => logging.AddConsole();
 });
 ```
 
+Or bind `appsettings.json` first and layer code-only options on top — both
+sources are combined, and bound values can still be overridden in the callback:
+
+```csharp
+builder.Services.AddTelemetry(builder.Configuration, o =>
+{
+    // Everything from appsettings.json is already bound here.
+    o.ConfigureTracing = tracing => tracing.AddSource("MyApp");
+    o.ConfigureMetrics = metrics => metrics.AddMeter("MyApp");
+});
+```
+
 ---
 
-## 📡 Backend Examples
+## 🔌 Running Locally with a Backend
 
-Run the helm charts or use docker deploy with the cmd scripts.
-See the [deploy folder](./deploy) for all configuration files and startup scripts,
-and the [sample project](./OpenTelemetryExtension.Configuration.Sample) for the corresponding `appsettings` configurations.
+The [sample project](./src/OpenTelemetryExtension.Configuration.Sample) ships a
+ready-to-run configuration for every supported backend. Each backend has:
 
-### .NET Aspire Dashboard
+1. an **infrastructure start script** (Docker Compose or Helm) in [`infrastructure/`](./infrastructure),
+2. a **launch profile** that selects the matching `appsettings.<env>.json`,
+3. a **UI** where the exported traces, metrics and logs show up.
+
+### Steps
+
+1. **Start the backend infrastructure** — run the script for your backend (see table).
+   - Docker scripts live in [`infrastructure/docker`](./infrastructure/docker) and need Docker.
+   - Helm scripts live in [`infrastructure/helm`](./infrastructure/helm) and need a local Kubernetes cluster (e.g. k3s in WSL2).
+2. **Run the sample** with the matching profile:
+   ```bash
+   cd src/OpenTelemetryExtension.Configuration.Sample
+   dotnet run --launch-profile "Start Aspire"
+   ```
+   Or pick the profile from the run dropdown in Visual Studio / Rider.
+3. **Generate traffic** — the app opens Swagger at `https://localhost:5073/swagger`; call an endpoint.
+4. **Open the backend UI** (see table) to inspect the telemetry.
+
+### Backend overview
+
+| Backend | Start infrastructure | Launch profile | Backend UI |
+|---|---|---|---|
+| .NET Aspire Dashboard | `infrastructure/docker/docker-install-aspire-dashboard.cmd` *(or Helm: `helm/helm-install-aspire-dashboard.cmd`)* | `Start Aspire` | <http://localhost:31888> |
+| Jaeger | `infrastructure/docker/docker-install-jaeger.cmd` | `Start Jaeger` | <http://localhost:16686> |
+| Grafana Loki *(logs only)* | `infrastructure/docker/docker-install-loki.cmd` | `Start Loki` | <http://localhost:3000> (Grafana, `admin`/`admin`) |
+| OpenObserve | `infrastructure/helm/helm-install-openobserve.cmd` | `Start OpenObserve Http` / `Start OpenObserve Grpc` | <http://localhost:30117> (`admin@web.de`/`admin`) |
+| OpenSearch | `infrastructure/docker/docker-install-opensearch.cmd` | `Start OpenSearch` | <http://localhost:5601> (OpenSearch Dashboards) |
+| SigNoz | `infrastructure/helm/helm-install-signoz.cmd` | `Start SigNoz` | SigNoz frontend service (see `kubectl get svc`) |
+
+> **Tip — viewing logs in the Aspire Dashboard:** after starting the app with the
+> `Start Aspire` profile, open <http://localhost:31888>, then go to the
+> **Structured** (logs), **Traces** or **Metrics** tab. Data appears as soon as
+> you hit a Swagger endpoint.
+
+---
+
+## ⚙️ Backend Configurations
+
+These are the exact `appsettings.<env>.json` files used by the sample's launch profiles.
+
+### .NET Aspire Dashboard — `appsettings.aspire.json`
+
+The dashboard requires an API key on the OTLP endpoint (`x-otlp-api-key`). The
+gRPC endpoint is exposed on NodePort `31889` (Helm) or host port `31889` (Docker).
 
 ```json
 {
   "Telemetry": {
-    "Endpoint": "http://localhost:18888",
-    "Protocol": "HttpProtobuf"
+    "Protocol": "Grpc",
+    "Endpoint": "http://localhost:31889",
+    "Headers": "x-otlp-api-key=aspire"
   }
 }
 ```
 
-### Jaeger
+### Jaeger — `appsettings.jaeger.json`
 
 ```json
 {
   "Telemetry": {
-    "Endpoint": "http://localhost:4318",
-    "Protocol": "HttpProtobuf"
+    "Protocol": "Grpc",
+    "Endpoint": "http://localhost:4317"
   }
 }
 ```
 
-### SigNoz
+### Grafana Loki *(logs only)* — `appsettings.loki.json`
 
 ```json
 {
   "Telemetry": {
-    "Endpoint": "http://localhost:50709"
-  }
-}
-```
-
-### OpenSearch
-
-```json
-{
-  "Telemetry": {
-    "Endpoint": "http://localhost:30318",
-    "Protocol": "HttpProtobuf"
-  }
-}
-```
-
-### Grafana Loki
-
-> Loki supports OTLP for **logs only**. Tracing and metrics must be disabled.
-
-```json
-{
-  "Telemetry": {
+    "Protocol": "HttpProtobuf",
     "Endpoint": "http://localhost:3100/otlp",
-    "Protocol": "HttpProtobuf",
-    "EnableTracing": false,
-    "EnableMetrics": false
+    "Headers": ""
   }
 }
 ```
 
-### OpenObserve — HTTP/protobuf
+### SigNoz — `appsettings.signoz.json`
 
 ```json
 {
   "Telemetry": {
-    "Endpoint": "http://localhost:30117/api/default",
     "Protocol": "HttpProtobuf",
+    "Endpoint": "http://localhost:50709",
+    "Headers": ""
+  }
+}
+```
+
+### OpenSearch — `appsettings.opensearch.json`
+
+```json
+{
+  "Telemetry": {
+    "Protocol": "HttpProtobuf",
+    "Endpoint": "http://localhost:30318",
+    "Headers": ""
+  }
+}
+```
+
+### OpenObserve — HTTP/protobuf — `appsettings.openobserve-http.json`
+
+```json
+{
+  "Telemetry": {
+    "Protocol": "HttpProtobuf",
+    "Endpoint": "http://localhost:30117/api/default",
     "Headers": "Authorization=Basic <base64>,stream-name=default"
   }
 }
 ```
 
-### OpenObserve — gRPC
+### OpenObserve — gRPC — `appsettings.openobserve-grpc.json`
 
 ```json
 {
   "Telemetry": {
-    "Endpoint": "http://localhost:30118",
     "Protocol": "Grpc",
+    "Endpoint": "http://localhost:30118",
     "Headers": "Authorization=Basic <base64>,organization=default,stream-name=default"
   }
 }
 ```
 
----
-
-## 🤝 How to Contribute
-
-Contributions are welcome! If you'd like to improve the project, please:
-
-1. Check out our [contributing guidelines](CONTRIBUTING.md).
-2. Ideally, open an issue before starting work.
-3. Submit a pull request with your changes.
-
-Thank you for helping make OpenTelemetryExtension.Configuration better!
+> The `Authorization` header is `Basic base64(email:password)`. Replace `<base64>`
+> with your own credentials.
 
 ---
 
-## 🐞 Report a Bug
+## 🤝 Contributing
 
-If you encounter any issues or bugs, please [report them here](https://github.com/thorstenalpers/OpenTelemetryExtension.Configuration/issues).
+See [CONTRIBUTING.md](./CONTRIBUTING.md).
 
----
+## 🐛 Report a Bug
 
-For additional licensing and attribution details, see [NOTICE.md](./NOTICE.md) and [THIRD_PARTY_LICENSES.md](./THIRD_PARTY_LICENSES.md).
+[Open an issue](https://github.com/thorstenalpers/OpenTelemetryExtension.Configuration/issues).

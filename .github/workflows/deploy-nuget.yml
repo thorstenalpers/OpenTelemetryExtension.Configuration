@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      Solution_Name: "src/OpenTelemetryExtension.slnx"
+      Solution_Name: "OpenTelemetryExtension.slnx"
       Nuget_Project_Path: "src/OpenTelemetryExtension.Configuration/OpenTelemetryExtension.Configuration.csproj"
       Test_Project_Path: "src/OpenTelemetryExtension.Configuration.Tests/OpenTelemetryExtension.Configuration.Tests.csproj"       
 
@@ -37,7 +37,7 @@ jobs:
       run: dotnet build "${{ env.Solution_Name }}" --configuration Release  --no-restore
 
     - name: Run tests
-      run: dotnet test "${{ env.Test_Project_Path }}" --configuration Release --logger "console;verbosity=detailed"  --logger "console;verbosity=detailed" --filter "TestCategory!=Long-Running"  
+      run: dotnet test "${{ env.Test_Project_Path }}" --configuration Release --logger "console;verbosity=detailed"  --logger "console;verbosity=detailed"  
           
     - name: Pack NuGet Package
       run: dotnet pack "${{ env.Nuget_Project_Path }}" --configuration Release --no-build --output ./nupkg
@@ -69,13 +69,13 @@ jobs:
         git push origin "v${{ env.VERSION }}"
 
     - name: Create GitHub Release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      uses: softprops/action-gh-release@v2
       with:
         tag_name: "v${{ env.VERSION }}"
-        release_name: "OpenTelemetryExtension.Configuration ${{ env.VERSION }}"
+        name: "OpenTelemetryExtension.Configuration ${{ env.VERSION }}"
         body_path: ./release-notes/v${{ env.VERSION }}.md
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Add GitHub Packages NuGet Source
       run: |

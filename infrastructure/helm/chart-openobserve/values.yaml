@@ -18,8 +18,8 @@ nameOverride: ""
 fullnameOverride: ""
 
 openobserve:
-  rootEmail: root@example.com
-  rootPassword: MyStr0ng!Pass2026#
+  rootEmail: admin@web.de
+  rootPassword: admin
   
 # This section builds out the service account more information can be found here: https://kubernetes.io/docs/concepts/security/service-accounts/
 serviceAccount:

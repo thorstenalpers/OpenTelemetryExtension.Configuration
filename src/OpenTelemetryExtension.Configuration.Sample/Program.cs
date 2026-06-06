@@ -1,6 +1,4 @@
 using Microsoft.EntityFrameworkCore;
-using OpenTelemetryExtension.Configuration;
-using OpenTelemetryExtension.Configuration.Sample.Model;
 
 namespace OpenTelemetryExtension.Configuration.Sample;
 
@@ -9,11 +7,6 @@ public class Program
     public static void Main(string[] args)
     {
         var builder = WebApplication.CreateBuilder(args);
-
-        builder.Services.Configure<TelemetryOptions>(builder.Configuration.GetSection(TelemetryOptions.SectionName));
-
-        var telemetryOptions = builder.Configuration.GetSection(TelemetryOptions.SectionName).Get<TelemetryOptions>()
-            ?? throw new InvalidOperationException("Telemetry configuration missing.");
 
         builder.Logging.ClearProviders();
         builder.Services.AddTelemetry(builder.Configuration);

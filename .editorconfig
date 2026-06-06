@@ -1,6 +1,11 @@
 																							 
 root = true
 
+# Generated EF Core migrations — skip style rules
+[src/**/Migrations/*.cs]
+generated_code = true
+dotnet_analyzer_diagnostic.severity = none
+
 # [*.{xml,yaml,yml,json}]
 # indent_style = space
 # indent_size = 2

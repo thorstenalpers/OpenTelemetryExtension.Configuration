@@ -1,525 +1,631 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
-using OpenTelemetry.Exporter;
-using OpenTelemetry.Metrics;
-using OpenTelemetry.Trace;
 
-namespace OpenTelemetryExtension.Configuration.Tests
+namespace OpenTelemetryExtension.Configuration.Tests;
+
+public class TelemetryServiceCollectionExtensionsTests
 {
-    public class TelemetryServiceCollectionExtensionsTests
+    // ── Helpers ───────────────────────────────────────────────────────────
+
+    private static IServiceCollection NewServices() => new ServiceCollection();
+
+    // Forces the lazy OpenTelemetry configuration lambdas (resource builder,
+    // exporters, instrumentation) to actually execute by resolving the signal
+    // providers from the built container.
+    private static void BuildAndResolveProviders(IServiceCollection services)
     {
-        // ── Helpers ───────────────────────────────────────────────────────────
+        var provider = services.BuildServiceProvider();
+        _ = provider.GetService<TracerProvider>();
+        _ = provider.GetService<MeterProvider>();
+        _ = provider.GetRequiredService<ILoggerFactory>().CreateLogger("test");
+    }
 
-        private static IServiceCollection NewServices() => new ServiceCollection();
-
-        private static Action<TelemetryOptions> MinimalConfigure(Action<TelemetryOptions>? extra = null) =>
-            o =>
-            {
-                o.Endpoint = new Uri("http://localhost:4318");
-                extra?.Invoke(o);
-            };
-
-        private static IConfiguration BuildConfig(Dictionary<string, string?> values)
+    private static Action<TelemetryOptions> MinimalConfigure(Action<TelemetryOptions>? extra = null) =>
+        o =>
         {
-            return new ConfigurationBuilder()
-                .AddInMemoryCollection(values)
-                .Build();
-        }
+            o.Enabled = true;
+            o.Endpoint = new Uri("http://localhost:4318");
+            extra?.Invoke(o);
+        };
 
-        private static IConfiguration ValidConfig(Dictionary<string, string?>? overrides = null)
+    private static IConfiguration BuildConfig(Dictionary<string, string?> values)
+    {
+        return new ConfigurationBuilder()
+            .AddInMemoryCollection(values)
+            .Build();
+    }
+
+    private static IConfiguration ValidConfig(Dictionary<string, string?>? overrides = null)
+    {
+        var values = new Dictionary<string, string?>
         {
-            var values = new Dictionary<string, string?>
+            ["Telemetry:Endpoint"] = "http://localhost:4318",
+        };
+        if (overrides is not null)
+        {
+            foreach (var kv in overrides)
             {
-                ["Telemetry:Endpoint"] = "http://localhost:4318",
-            };
-            if (overrides is not null)
-            {
-                foreach (var kv in overrides)
-                {
-                    values[kv.Key] = kv.Value;
-                }
+                values[kv.Key] = kv.Value;
             }
-
-            return BuildConfig(values);
         }
 
-        // ── AddTelemetry(IConfiguration) ─────────────────────────────────────
+        return BuildConfig(values);
+    }
 
-        [Fact]
-        public void AddTelemetry_IConfiguration_ReturnsServices()
+    // ── AddTelemetry(IConfiguration) ─────────────────────────────────────
+
+    [Fact]
+    public void AddTelemetry_IConfiguration_ReturnsServices()
+    {
+        var services = NewServices();
+        var result = services.AddTelemetry(ValidConfig());
+        Assert.Same(services, result);
+    }
+
+    [Fact]
+    public void AddTelemetry_IConfiguration_ThrowsWhenEnabledAndEndpointMissing()
+    {
+        var services = NewServices();
+        var config = BuildConfig(new Dictionary<string, string?> { ["Telemetry:Enabled"] = "true" });
+        Assert.Throws<ValidationException>(() => services.AddTelemetry(config));
+    }
+
+    [Fact]
+    public void AddTelemetry_IConfiguration_ThrowsWhenSectionMissing()
+    {
+        var services = NewServices();
+        var config = BuildConfig(new Dictionary<string, string?>());
+        Assert.Throws<InvalidOperationException>(() => services.AddTelemetry(config));
+    }
+
+    [Fact]
+    public void AddTelemetry_IConfiguration_NoThrowWhenDisabledAndEndpointMissing()
+    {
+        var services = NewServices();
+        var config = BuildConfig(new Dictionary<string, string?> { ["Telemetry:Enabled"] = "false" });
+        services.AddTelemetry(config); // Section exists, Enabled = false → no-op, no exception
+    }
+
+    [Fact]
+    public void AddTelemetry_IConfiguration_MapsAllScalarProperties()
+    {
+        // Verify that the IConfiguration overload forwards all options to the Action overload
+        // by checking that registration succeeds with every supported appsettings key.
+        var config = ValidConfig(new Dictionary<string, string?>
         {
-            var services = NewServices();
-            var result = services.AddTelemetry(ValidConfig());
-            Assert.Same(services, result);
-        }
+            ["Telemetry:Enabled"] = "true",
+            ["Telemetry:Headers"] = "x-key=value",
+            ["Telemetry:Protocol"] = "HttpProtobuf",
+            ["Telemetry:ServiceName"] = "svc",
+            ["Telemetry:SampleRatio"] = "0.5",
+            ["Telemetry:EnableTracing"] = "true",
+            ["Telemetry:EnableMetrics"] = "true",
+            ["Telemetry:EnableLogging"] = "true",
+            ["Telemetry:EnableAspNetCoreInstrumentation"] = "true",
+            ["Telemetry:EnableHttpClientInstrumentation"] = "false",
+            ["Telemetry:EnableSqlClientInstrumentation"] = "false",
+            ["Telemetry:EnableRuntimeInstrumentation"] = "true",
+            ["Telemetry:RecordExceptions"] = "false",
+            ["Telemetry:ExcludedPaths:0"] = "/health",
+            ["Telemetry:ExcludedPaths:1"] = "/metrics",
+            ["Telemetry:IncludeScopes"] = "true",
+            ["Telemetry:IncludeFormattedMessage"] = "true",
+        });
 
-        [Fact]
-        public void AddTelemetry_IConfiguration_ThrowsWhenSectionMissing()
+        var services = NewServices();
+        var result = services.AddTelemetry(config);
+        Assert.Same(services, result);
+    }
+
+    [Fact]
+    public void AddTelemetry_IConfiguration_Disabled_RegistersNoOtel()
+    {
+        var config = ValidConfig(new Dictionary<string, string?>
         {
-            var services = NewServices();
-            var config = BuildConfig(new Dictionary<string, string?>());
-            // Section exists but Endpoint is null → ValidationException
-            Assert.Throws<InvalidOperationException>(() => services.AddTelemetry(config));
-        }
+            ["Telemetry:Enabled"] = "false",
+        });
 
-        [Fact]
-        public void AddTelemetry_IConfiguration_MapsAllScalarProperties()
+        var services = NewServices();
+        services.AddTelemetry(config);
+
+        // When disabled, no OpenTelemetry SDK service (TracerProvider) should be registered.
+        var provider = services.BuildServiceProvider();
+        var tracer = provider.GetService<TracerProvider>();
+        Assert.Null(tracer);
+    }
+
+    // ── AddTelemetry(Action<TelemetryOptions>) ────────────────────────────
+
+    [Fact]
+    public void AddTelemetry_Action_ReturnsServices()
+    {
+        var services = NewServices();
+        var result = services.AddTelemetry(MinimalConfigure());
+        Assert.Same(services, result);
+    }
+
+    [Fact]
+    public void AddTelemetry_Action_ThrowsWhenEndpointIsNull()
+    {
+        var services = NewServices();
+        Assert.Throws<ValidationException>(() =>
+            services.AddTelemetry(o => { /* Endpoint left null */ }));
+    }
+
+    [Fact]
+    public void AddTelemetry_Action_Disabled_DoesNotRegisterOtel()
+    {
+        var services = NewServices();
+        services.AddTelemetry(MinimalConfigure(o => o.Enabled = false));
+
+        var provider = services.BuildServiceProvider();
+        Assert.Null(provider.GetService<TracerProvider>());
+    }
+
+    // ── Enabled = true, all signals on ───────────────────────────────────
+
+    [Fact]
+    public void AddTelemetry_AllSignalsEnabled_RegistersTracerProvider()
+    {
+        var services = NewServices();
+        services.AddTelemetry(MinimalConfigure());
+        var provider = services.BuildServiceProvider();
+        Assert.NotNull(provider.GetService<TracerProvider>());
+    }
+
+    [Fact]
+    public void AddTelemetry_AllSignalsEnabled_RegistersMeterProvider()
+    {
+        var services = NewServices();
+        services.AddTelemetry(MinimalConfigure());
+        var provider = services.BuildServiceProvider();
+        Assert.NotNull(provider.GetService<MeterProvider>());
+    }
+
+    [Fact]
+    public void AddTelemetry_AllSignalsEnabled_RegistersLoggerFactory()
+    {
+        var services = NewServices();
+        services.AddTelemetry(MinimalConfigure());
+        var provider = services.BuildServiceProvider();
+        Assert.NotNull(provider.GetService<ILoggerFactory>());
+    }
+
+    // ── Individual signals disabled ───────────────────────────────────────
+
+    [Fact]
+    public void AddTelemetry_TracingDisabled_NoTracerProvider()
+    {
+        var services = NewServices();
+        services.AddTelemetry(MinimalConfigure(o =>
         {
-            // Verify that the IConfiguration overload forwards all options to the Action overload
-            // by checking that registration succeeds with every supported appsettings key.
-            var config = ValidConfig(new Dictionary<string, string?>
-            {
-                ["Telemetry:Enabled"] = "true",
-                ["Telemetry:Headers"] = "x-key=value",
-                ["Telemetry:Protocol"] = "HttpProtobuf",
-                ["Telemetry:ServiceName"] = "svc",
-                ["Telemetry:EnvironmentName"] = "prod",
-                ["Telemetry:EnableTracing"] = "true",
-                ["Telemetry:EnableMetrics"] = "true",
-                ["Telemetry:EnableLogging"] = "true",
-                ["Telemetry:EnableAspNetCoreInstrumentation"] = "true",
-                ["Telemetry:EnableHttpClientInstrumentation"] = "false",
-                ["Telemetry:EnableSqlClientInstrumentation"] = "false",
-                ["Telemetry:EnableRuntimeInstrumentation"] = "true",
-                ["Telemetry:RecordExceptions"] = "false",
-                ["Telemetry:ExcludeHealthChecks"] = "true",
-            });
+            o.EnableTracing = false;
+            o.EnableMetrics = false;
+            o.EnableLogging = false;
+        }));
+        var provider = services.BuildServiceProvider();
+        Assert.Null(provider.GetService<TracerProvider>());
+    }
 
-            var services = NewServices();
-            var result = services.AddTelemetry(config);
-            Assert.Same(services, result);
-        }
-
-        [Fact]
-        public void AddTelemetry_IConfiguration_Disabled_RegistersNoOtel()
+    [Fact]
+    public void AddTelemetry_MetricsDisabled_NoMeterProvider()
+    {
+        var services = NewServices();
+        services.AddTelemetry(MinimalConfigure(o =>
         {
-            var config = ValidConfig(new Dictionary<string, string?>
-            {
-                ["Telemetry:Enabled"] = "false",
-            });
+            o.EnableTracing = false;
+            o.EnableMetrics = false;
+            o.EnableLogging = false;
+        }));
+        var provider = services.BuildServiceProvider();
+        Assert.Null(provider.GetService<MeterProvider>());
+    }
 
-            var services = NewServices();
-            services.AddTelemetry(config);
+    // ── Instrumentation flag combinations ─────────────────────────────────
 
-            // When disabled, no OpenTelemetry SDK service (TracerProvider) should be registered.
-            var provider = services.BuildServiceProvider();
-            var tracer = provider.GetService<TracerProvider>();
-            Assert.Null(tracer);
-        }
-
-        // ── AddTelemetry(Action<TelemetryOptions>) ────────────────────────────
-
-        [Fact]
-        public void AddTelemetry_Action_ReturnsServices()
+    [Fact]
+    public void AddTelemetry_InstrumentationFlagsOff_DoesNotThrow()
+    {
+        var services = NewServices();
+        services.AddTelemetry(MinimalConfigure(o =>
         {
-            var services = NewServices();
-            var result = services.AddTelemetry(MinimalConfigure());
-            Assert.Same(services, result);
-        }
+            o.EnableAspNetCoreInstrumentation = false;
+            o.EnableHttpClientInstrumentation = false;
+            o.EnableSqlClientInstrumentation = false;
+            o.EnableRuntimeInstrumentation = false;
+        }));
 
-        [Fact]
-        public void AddTelemetry_Action_ThrowsWhenEndpointIsNull()
+        var ex = Record.Exception(() => BuildAndResolveProviders(services));
+
+        Assert.Null(ex);
+    }
+
+    [Fact]
+    public void AddTelemetry_AllInstrumentationFlagsOn_DoesNotThrow()
+    {
+        var services = NewServices();
+        services.AddTelemetry(MinimalConfigure(o =>
         {
-            var services = NewServices();
-            Assert.Throws<ValidationException>(() =>
-                services.AddTelemetry(o => { /* Endpoint left null */ }));
-        }
+            o.EnableAspNetCoreInstrumentation = true;
+            o.EnableHttpClientInstrumentation = true;
+            o.EnableSqlClientInstrumentation = true;
+            o.EnableRuntimeInstrumentation = true;
+            o.RecordExceptions = true;
+            o.ExcludedPaths = ["/health"];
+        }));
 
-        [Fact]
-        public void AddTelemetry_Action_Disabled_DoesNotRegisterOtel()
+        var ex = Record.Exception(() => BuildAndResolveProviders(services));
+
+        Assert.Null(ex);
+    }
+
+    [Fact]
+    public void AddTelemetry_RecordExceptionsFalse_DoesNotThrow()
+    {
+        var services = NewServices();
+        var ex = Record.Exception(() => services.AddTelemetry(MinimalConfigure(o =>
+            o.RecordExceptions = false)));
+        Assert.Null(ex);
+    }
+
+    [Fact]
+    public void AddTelemetry_ExcludedPathsEmpty_DoesNotThrow()
+    {
+        var services = NewServices();
+        services.AddTelemetry(MinimalConfigure(o => o.ExcludedPaths = []));
+
+        var ex = Record.Exception(() => BuildAndResolveProviders(services));
+
+        Assert.Null(ex);
+    }
+
+    [Fact]
+    public void AddTelemetry_ExcludedPathsCustom_DoesNotThrow()
+    {
+        var services = NewServices();
+        var ex = Record.Exception(() => services.AddTelemetry(MinimalConfigure(o =>
+            o.ExcludedPaths = ["/health", "/metrics"])));
+        Assert.Null(ex);
+    }
+
+    [Fact]
+    public void AddTelemetry_ResourceAttributes_DoesNotThrow()
+    {
+        var services = NewServices();
+        services.AddTelemetry(MinimalConfigure(o =>
+            o.ResourceAttributes = new Dictionary<string, string> { ["team"] = "backend", ["region"] = "eu-west-1" }));
+
+        var ex = Record.Exception(() => BuildAndResolveProviders(services));
+
+        Assert.Null(ex);
+    }
+
+    [Fact]
+    public void AddTelemetry_SampleRatioHalf_DoesNotThrow()
+    {
+        var services = NewServices();
+        var ex = Record.Exception(() => services.AddTelemetry(MinimalConfigure(o =>
+            o.SampleRatio = 0.5)));
+        Assert.Null(ex);
+    }
+
+    [Fact]
+    public void AddTelemetry_SampleRatioZero_DoesNotThrow()
+    {
+        var services = NewServices();
+        var ex = Record.Exception(() => services.AddTelemetry(MinimalConfigure(o =>
+            o.SampleRatio = 0.0)));
+        Assert.Null(ex);
+    }
+
+    [Fact]
+    public void AddTelemetry_IncludeScopesFalse_DoesNotThrow()
+    {
+        var services = NewServices();
+        var ex = Record.Exception(() => services.AddTelemetry(MinimalConfigure(o =>
+            o.IncludeScopes = false)));
+        Assert.Null(ex);
+    }
+
+    [Fact]
+    public void AddTelemetry_IncludeFormattedMessageFalse_DoesNotThrow()
+    {
+        var services = NewServices();
+        var ex = Record.Exception(() => services.AddTelemetry(MinimalConfigure(o =>
+            o.IncludeFormattedMessage = false)));
+        Assert.Null(ex);
+    }
+
+    // ── ServiceName ───────────────────────────────────────────────────────
+
+    [Fact]
+    public void AddTelemetry_WithServiceName_DoesNotThrow()
+    {
+        var services = NewServices();
+        var ex = Record.Exception(() => services.AddTelemetry(MinimalConfigure(o =>
+            o.ServiceName = "my-api")));
+        Assert.Null(ex);
+    }
+
+    [Fact]
+    public void AddTelemetry_WithServiceNameAndResourceAttributes_DoesNotThrow()
+    {
+        var services = NewServices();
+        services.AddTelemetry(MinimalConfigure(o =>
         {
-            var services = NewServices();
-            services.AddTelemetry(MinimalConfigure(o => o.Enabled = false));
+            o.ServiceName = "my-api";
+            o.ResourceAttributes = new Dictionary<string, string> { ["deployment.environment"] = "production" };
+        }));
 
-            var provider = services.BuildServiceProvider();
-            Assert.Null(provider.GetService<TracerProvider>());
-        }
+        var ex = Record.Exception(() => BuildAndResolveProviders(services));
 
-        // ── Enabled = true, all signals on ───────────────────────────────────
+        Assert.Null(ex);
+    }
 
-        [Fact]
-        public void AddTelemetry_AllSignalsEnabled_RegistersTracerProvider()
+    // ── Protocol ─────────────────────────────────────────────────────────
+
+    [Fact]
+    public void AddTelemetry_ProtocolHttpProtobuf_DoesNotThrow()
+    {
+        var services = NewServices();
+        services.AddTelemetry(MinimalConfigure(o => o.Protocol = OtlpExportProtocol.HttpProtobuf));
+
+        var ex = Record.Exception(() => BuildAndResolveProviders(services));
+
+        Assert.Null(ex);
+    }
+
+    [Fact]
+    public void AddTelemetry_ProtocolGrpc_DoesNotThrow()
+    {
+        var services = NewServices();
+        services.AddTelemetry(MinimalConfigure(o => o.Protocol = OtlpExportProtocol.Grpc));
+
+        var ex = Record.Exception(() => BuildAndResolveProviders(services));
+
+        Assert.Null(ex);
+    }
+
+    // ── User callbacks ────────────────────────────────────────────────────
+
+    [Fact]
+    public void AddTelemetry_ConfigureTracing_CallbackIsInvoked()
+    {
+        bool invoked = false;
+        var services = NewServices();
+        services.AddTelemetry(MinimalConfigure(o =>
+            o.ConfigureTracing = _ => { invoked = true; }));
+
+        // Resolve TracerProvider to trigger the builder pipeline
+        services.BuildServiceProvider().GetService<TracerProvider>();
+        Assert.True(invoked);
+    }
+
+    [Fact]
+    public void AddTelemetry_ConfigureMetrics_CallbackIsInvoked()
+    {
+        bool invoked = false;
+        var services = NewServices();
+        services.AddTelemetry(MinimalConfigure(o =>
+            o.ConfigureMetrics = _ => { invoked = true; }));
+
+        services.BuildServiceProvider().GetService<MeterProvider>();
+        Assert.True(invoked);
+    }
+
+    [Fact]
+    public void AddTelemetry_ConfigureLogging_CallbackIsInvoked()
+    {
+        bool invoked = false;
+        var services = NewServices();
+        services.AddTelemetry(MinimalConfigure(o =>
+            o.ConfigureLogging = _ => { invoked = true; }));
+
+        services.BuildServiceProvider().GetService<ILoggerFactory>();
+        Assert.True(invoked);
+    }
+
+    [Fact]
+    public void AddTelemetry_NullCallbacks_DoNotThrow()
+    {
+        var services = NewServices();
+        var ex = Record.Exception(() => services.AddTelemetry(MinimalConfigure(o =>
         {
-            var services = NewServices();
-            services.AddTelemetry(MinimalConfigure());
-            var provider = services.BuildServiceProvider();
-            Assert.NotNull(provider.GetService<TracerProvider>());
-        }
+            o.ConfigureTracing = null;
+            o.ConfigureMetrics = null;
+            o.ConfigureLogging = null;
+        })));
+        Assert.Null(ex);
+    }
 
-        [Fact]
-        public void AddTelemetry_AllSignalsEnabled_RegistersMeterProvider()
+    // ── Headers ───────────────────────────────────────────────────────────
+
+    [Fact]
+    public void AddTelemetry_WithHeaders_DoesNotThrow()
+    {
+        var services = NewServices();
+        var ex = Record.Exception(() => services.AddTelemetry(MinimalConfigure(o =>
+            o.Headers = "Authorization=Bearer token123")));
+        Assert.Null(ex);
+    }
+
+    // ── IConfiguration edge cases ─────────────────────────────────────────
+
+    [Fact]
+    public void AddTelemetry_IConfiguration_GrpcProtocol_DoesNotThrow()
+    {
+        var config = ValidConfig(new Dictionary<string, string?>
         {
-            var services = NewServices();
-            services.AddTelemetry(MinimalConfigure());
-            var provider = services.BuildServiceProvider();
-            Assert.NotNull(provider.GetService<MeterProvider>());
-        }
+            ["Telemetry:Protocol"] = "Grpc",
+        });
+        var services = NewServices();
+        var ex = Record.Exception(() => services.AddTelemetry(config));
+        Assert.Null(ex);
+    }
 
-        [Fact]
-        public void AddTelemetry_AllSignalsEnabled_RegistersLoggerFactory()
+    [Fact]
+    public void AddTelemetry_IConfiguration_AllSignalsDisabled_DoesNotThrow()
+    {
+        var config = ValidConfig(new Dictionary<string, string?>
         {
-            var services = NewServices();
-            services.AddTelemetry(MinimalConfigure());
-            var provider = services.BuildServiceProvider();
-            Assert.NotNull(provider.GetService<ILoggerFactory>());
-        }
+            ["Telemetry:EnableTracing"] = "false",
+            ["Telemetry:EnableMetrics"] = "false",
+            ["Telemetry:EnableLogging"] = "false",
+        });
+        var services = NewServices();
+        var ex = Record.Exception(() => services.AddTelemetry(config));
+        Assert.Null(ex);
+    }
 
-        // ── Individual signals disabled ───────────────────────────────────────
+    // ── IConfiguration + code callback (combined) ─────────────────────────
 
-        [Fact]
-        public void AddTelemetry_TracingDisabled_NoTracerProvider()
+    [Fact]
+    public void AddTelemetry_IConfigurationWithConfigure_InvokesCallback()
+    {
+        var invoked = false;
+        var config = ValidConfig(new Dictionary<string, string?> { ["Telemetry:Enabled"] = "true" });
+        var services = NewServices();
+
+        services.AddTelemetry(config, o => o.ConfigureTracing = _ => invoked = true);
+        services.BuildServiceProvider().GetService<TracerProvider>();
+
+        Assert.True(invoked);
+    }
+
+    [Fact]
+    public void AddTelemetry_IConfigurationWithConfigure_CallbackOverridesBoundValue()
+    {
+        // ServiceName is bound from config, then overridden in code.
+        var config = ValidConfig(new Dictionary<string, string?> { ["Telemetry:ServiceName"] = "from-config" });
+        var services = NewServices();
+        TelemetryOptions? captured = null;
+
+        services.AddTelemetry(config, o =>
         {
-            var services = NewServices();
-            services.AddTelemetry(MinimalConfigure(o =>
-            {
-                o.EnableTracing = false;
-                o.EnableMetrics = false;
-                o.EnableLogging = false;
-            }));
-            var provider = services.BuildServiceProvider();
-            Assert.Null(provider.GetService<TracerProvider>());
-        }
+            captured = o;
+            o.ServiceName = "from-code";
+        });
 
-        [Fact]
-        public void AddTelemetry_MetricsDisabled_NoMeterProvider()
-        {
-            var services = NewServices();
-            services.AddTelemetry(MinimalConfigure(o =>
-            {
-                o.EnableTracing = false;
-                o.EnableMetrics = false;
-                o.EnableLogging = false;
-            }));
-            var provider = services.BuildServiceProvider();
-            Assert.Null(provider.GetService<MeterProvider>());
-        }
+        Assert.Equal("from-code", captured!.ServiceName);
+    }
 
-        // ── Instrumentation flag combinations ─────────────────────────────────
+    [Fact]
+    public void AddTelemetry_IConfigurationWithConfigure_CodeOnlyOptionAppliedOnTopOfConfig()
+    {
+        // Endpoint comes from config (JSON), ConfigureMetrics comes from code.
+        var invoked = false;
+        var config = ValidConfig(new Dictionary<string, string?> { ["Telemetry:Enabled"] = "true" });
+        var services = NewServices();
 
-        [Fact]
-        public void AddTelemetry_InstrumentationFlagsOff_DoesNotThrow()
-        {
-            var services = NewServices();
-            var ex = Record.Exception(() => services.AddTelemetry(MinimalConfigure(o =>
-            {
-                o.EnableAspNetCoreInstrumentation = false;
-                o.EnableHttpClientInstrumentation = false;
-                o.EnableSqlClientInstrumentation = false;
-                o.EnableRuntimeInstrumentation = false;
-            })));
-            Assert.Null(ex);
-        }
+        services.AddTelemetry(config, o => o.ConfigureMetrics = _ => invoked = true);
+        services.BuildServiceProvider().GetService<MeterProvider>();
 
-        [Fact]
-        public void AddTelemetry_AllInstrumentationFlagsOn_DoesNotThrow()
-        {
-            var services = NewServices();
-            var ex = Record.Exception(() => services.AddTelemetry(MinimalConfigure(o =>
-            {
-                o.EnableAspNetCoreInstrumentation = true;
-                o.EnableHttpClientInstrumentation = true;
-                o.EnableSqlClientInstrumentation = true;
-                o.EnableRuntimeInstrumentation = true;
-                o.RecordExceptions = true;
-                o.ExcludeHealthChecks = true;
-            })));
-            Assert.Null(ex);
-        }
+        Assert.True(invoked);
+    }
 
-        [Fact]
-        public void AddTelemetry_RecordExceptionsFalse_DoesNotThrow()
-        {
-            var services = NewServices();
-            var ex = Record.Exception(() => services.AddTelemetry(MinimalConfigure(o =>
-                o.RecordExceptions = false)));
-            Assert.Null(ex);
-        }
+    [Fact]
+    public void AddTelemetry_IConfigurationWithNullConfigure_DoesNotThrow()
+    {
+        var services = NewServices();
+        var ex = Record.Exception(() => services.AddTelemetry(ValidConfig(), configure: null));
+        Assert.Null(ex);
+    }
 
-        [Fact]
-        public void AddTelemetry_ExcludeHealthChecksFalse_DoesNotThrow()
-        {
-            var services = NewServices();
-            var ex = Record.Exception(() => services.AddTelemetry(MinimalConfigure(o =>
-                o.ExcludeHealthChecks = false)));
-            Assert.Null(ex);
-        }
+    // ── ShouldInstrument (request filter logic) ───────────────────────────
 
-        // ── ServiceName / EnvironmentName ─────────────────────────────────────
+    [Theory]
+    [InlineData("/health", false)]       // exact excluded path → not instrumented
+    [InlineData("/health/live", false)]  // sub-segment of excluded → not instrumented
+    [InlineData("/healthz", true)]       // NOT a full segment match → instrumented
+    [InlineData("/api/orders", true)]    // unrelated path → instrumented
+    [InlineData("/", true)]              // root → instrumented
+    public void ShouldInstrument_RespectsExcludedPaths(string path, bool expectedInstrument)
+    {
+        var result = TelemetryServiceCollectionExtensions.ShouldInstrument(
+            new PathString(path), ["/health"]);
 
-        [Fact]
-        public void AddTelemetry_WithServiceName_DoesNotThrow()
-        {
-            var services = NewServices();
-            var ex = Record.Exception(() => services.AddTelemetry(MinimalConfigure(o =>
-                o.ServiceName = "my-api")));
-            Assert.Null(ex);
-        }
+        Assert.Equal(expectedInstrument, result);
+    }
 
-        [Fact]
-        public void AddTelemetry_WithEnvironmentName_DoesNotThrow()
-        {
-            var services = NewServices();
-            var ex = Record.Exception(() => services.AddTelemetry(MinimalConfigure(o =>
-                o.EnvironmentName = "staging")));
-            Assert.Null(ex);
-        }
+    [Theory]
+    [InlineData("/health", false)]
+    [InlineData("/metrics", false)]
+    [InlineData("/api", true)]
+    public void ShouldInstrument_MultipleExcludedPaths(string path, bool expectedInstrument)
+    {
+        var result = TelemetryServiceCollectionExtensions.ShouldInstrument(
+            new PathString(path), ["/health", "/metrics"]);
 
-        [Fact]
-        public void AddTelemetry_WithServiceNameAndEnvironmentName_DoesNotThrow()
-        {
-            var services = NewServices();
-            var ex = Record.Exception(() => services.AddTelemetry(MinimalConfigure(o =>
-            {
-                o.ServiceName = "my-api";
-                o.EnvironmentName = "production";
-            })));
-            Assert.Null(ex);
-        }
+        Assert.Equal(expectedInstrument, result);
+    }
 
-        // ── Protocol ─────────────────────────────────────────────────────────
+    [Fact]
+    public void ShouldInstrument_EmptyExcludedPaths_AlwaysInstruments()
+    {
+        var result = TelemetryServiceCollectionExtensions.ShouldInstrument(
+            new PathString("/health"), []);
 
-        [Fact]
-        public void AddTelemetry_ProtocolHttpProtobuf_DoesNotThrow()
-        {
-            var services = NewServices();
-            var ex = Record.Exception(() => services.AddTelemetry(MinimalConfigure(o =>
-                o.Protocol = OtlpExportProtocol.HttpProtobuf)));
-            Assert.Null(ex);
-        }
+        Assert.True(result);
+    }
 
-        [Fact]
-        public void AddTelemetry_ProtocolGrpc_DoesNotThrow()
-        {
-            var services = NewServices();
-            var ex = Record.Exception(() => services.AddTelemetry(MinimalConfigure(o =>
-                o.Protocol = OtlpExportProtocol.Grpc)));
-            Assert.Null(ex);
-        }
+    [Theory]
+    [InlineData("/health", false)]      // excluded → filter returns false
+    [InlineData("/api/orders", true)]   // not excluded → filter returns true
+    public void CreateRequestFilter_FiltersByPath(string path, bool expectedInstrument)
+    {
+        var filter = TelemetryServiceCollectionExtensions.CreateRequestFilter(["/health"]);
+        var context = new DefaultHttpContext();
+        context.Request.Path = path;
 
-        // ── User callbacks ────────────────────────────────────────────────────
+        var result = filter(context);
 
-        [Fact]
-        public void AddTelemetry_ConfigureTracing_CallbackIsInvoked()
-        {
-            bool invoked = false;
-            var services = NewServices();
-            services.AddTelemetry(MinimalConfigure(o =>
-                o.ConfigureTracing = _ => { invoked = true; }));
+        Assert.Equal(expectedInstrument, result);
+    }
 
-            // Resolve TracerProvider to trigger the builder pipeline
-            services.BuildServiceProvider().GetService<TracerProvider>();
-            Assert.True(invoked);
-        }
+    // ── Resource configuration ────────────────────────────────────────────────
 
-        [Fact]
-        public void AddTelemetry_ConfigureMetrics_CallbackIsInvoked()
-        {
-            bool invoked = false;
-            var services = NewServices();
-            services.AddTelemetry(MinimalConfigure(o =>
-                o.ConfigureMetrics = _ => { invoked = true; }));
+    [Fact]
+    public void AddTelemetry_WithServiceName_RegistersTracerProvider()
+    {
+        var services = NewServices();
+        services.AddTelemetry(MinimalConfigure(o => o.ServiceName = "my-api"));
+        Assert.NotNull(services.BuildServiceProvider().GetService<TracerProvider>());
+    }
 
-            services.BuildServiceProvider().GetService<MeterProvider>();
-            Assert.True(invoked);
-        }
+    [Fact]
+    public void AddTelemetry_WithResourceAttributes_RegistersTracerProvider()
+    {
+        var services = NewServices();
+        services.AddTelemetry(MinimalConfigure(o =>
+            o.ResourceAttributes = new Dictionary<string, string> { ["deployment.environment"] = "production" }));
+        Assert.NotNull(services.BuildServiceProvider().GetService<TracerProvider>());
+    }
 
-        [Fact]
-        public void AddTelemetry_ConfigureLogging_CallbackIsInvoked()
-        {
-            bool invoked = false;
-            var services = NewServices();
-            services.AddTelemetry(MinimalConfigure(o =>
-                o.ConfigureLogging = _ => { invoked = true; }));
+    [Fact]
+    public void AddTelemetry_NullServiceName_DoesNotThrow()
+    {
+        var services = NewServices();
+        var ex = Record.Exception(() =>
+            services.AddTelemetry(MinimalConfigure(o => o.ServiceName = null)));
+        Assert.Null(ex);
+    }
 
-            services.BuildServiceProvider().GetService<ILoggerFactory>();
-            Assert.True(invoked);
-        }
+    [Fact]
+    public void AddTelemetry_WhitespaceServiceName_DoesNotThrow()
+    {
+        var services = NewServices();
+        var ex = Record.Exception(() =>
+            services.AddTelemetry(MinimalConfigure(o => o.ServiceName = "   ")));
+        Assert.Null(ex);
+    }
 
-        [Fact]
-        public void AddTelemetry_NullCallbacks_DoNotThrow()
-        {
-            var services = NewServices();
-            var ex = Record.Exception(() => services.AddTelemetry(MinimalConfigure(o =>
-            {
-                o.ConfigureTracing = null;
-                o.ConfigureMetrics = null;
-                o.ConfigureLogging = null;
-            })));
-            Assert.Null(ex);
-        }
-
-        // ── Headers ───────────────────────────────────────────────────────────
-
-        [Fact]
-        public void AddTelemetry_WithHeaders_DoesNotThrow()
-        {
-            var services = NewServices();
-            var ex = Record.Exception(() => services.AddTelemetry(MinimalConfigure(o =>
-                o.Headers = "Authorization=Bearer token123")));
-            Assert.Null(ex);
-        }
-
-        // ── IConfiguration edge cases ─────────────────────────────────────────
-
-        [Fact]
-        public void AddTelemetry_IConfiguration_GrpcProtocol_DoesNotThrow()
-        {
-            var config = ValidConfig(new Dictionary<string, string?>
-            {
-                ["Telemetry:Protocol"] = "Grpc",
-            });
-            var services = NewServices();
-            var ex = Record.Exception(() => services.AddTelemetry(config));
-            Assert.Null(ex);
-        }
-
-        [Fact]
-        public void AddTelemetry_IConfiguration_AllSignalsDisabled_DoesNotThrow()
-        {
-            var config = ValidConfig(new Dictionary<string, string?>
-            {
-                ["Telemetry:EnableTracing"] = "false",
-                ["Telemetry:EnableMetrics"] = "false",
-                ["Telemetry:EnableLogging"] = "false",
-            });
-            var services = NewServices();
-            var ex = Record.Exception(() => services.AddTelemetry(config));
-            Assert.Null(ex);
-        }
-
-        [Fact]
-        public void Filter_HealthPath_ReturnsFalse()
-        {
-            // Arrange – simulate the filter lambda directly
-            Func<HttpContext, bool> filter =
-                ctx => !ctx.Request.Path.StartsWithSegments("/health");
-
-            var context = new DefaultHttpContext();
-            context.Request.Path = "/health";
-
-            // Act
-            var result = filter(context);
-
-            // Assert
-            Assert.False(result);
-        }
-
-        [Fact]
-        public void Filter_HealthSubPath_ReturnsFalse()
-        {
-            Func<HttpContext, bool> filter =
-                ctx => !ctx.Request.Path.StartsWithSegments("/health");
-
-            var context = new DefaultHttpContext();
-            context.Request.Path = "/health/live";
-
-            Assert.False(filter(context));
-        }
-
-        [Fact]
-        public void Filter_NonHealthPath_ReturnsTrue()
-        {
-            Func<HttpContext, bool> filter =
-                ctx => !ctx.Request.Path.StartsWithSegments("/health");
-
-            var context = new DefaultHttpContext();
-            context.Request.Path = "/api/orders";
-
-            Assert.True(filter(context));
-        }
-
-        [Fact]
-        public void Filter_RootPath_ReturnsTrue()
-        {
-            Func<HttpContext, bool> filter =
-                ctx => !ctx.Request.Path.StartsWithSegments("/health");
-
-            var context = new DefaultHttpContext();
-            context.Request.Path = "/";
-
-            Assert.True(filter(context));
-        }
-
-        [Fact]
-        public void Filter_HealthPrefix_InLongerPath_ReturnsFalse()
-        {
-            Func<HttpContext, bool> filter =
-                ctx => !ctx.Request.Path.StartsWithSegments("/health");
-
-            var context = new DefaultHttpContext();
-            context.Request.Path = "/healthz";
-
-            // StartsWithSegments matches full segments only — /healthz is NOT /health
-            Assert.True(filter(context));
-        }
-
-        // ── Resource configuration ────────────────────────────────────────────────
-
-        [Fact]
-        public void AddTelemetry_WithServiceName_RegistersTracerProvider()
-        {
-            var services = NewServices();
-            services.AddTelemetry(MinimalConfigure(o => o.ServiceName = "my-api"));
-            Assert.NotNull(services.BuildServiceProvider().GetService<TracerProvider>());
-        }
-
-        [Fact]
-        public void AddTelemetry_WithEnvironmentName_RegistersTracerProvider()
-        {
-            var services = NewServices();
-            services.AddTelemetry(MinimalConfigure(o => o.EnvironmentName = "production"));
-            Assert.NotNull(services.BuildServiceProvider().GetService<TracerProvider>());
-        }
-
-        [Fact]
-        public void AddTelemetry_WithServiceNameAndEnvironmentName_RegistersTracerProvider()
-        {
-            var services = NewServices();
-            services.AddTelemetry(MinimalConfigure(o =>
-            {
-                o.ServiceName = "my-api";
-                o.EnvironmentName = "production";
-            }));
-            Assert.NotNull(services.BuildServiceProvider().GetService<TracerProvider>());
-        }
-
-        [Fact]
-        public void AddTelemetry_NullServiceName_DoesNotThrow()
-        {
-            var services = NewServices();
-            var ex = Record.Exception(() =>
-                services.AddTelemetry(MinimalConfigure(o => o.ServiceName = null)));
-            Assert.Null(ex);
-        }
-
-        [Fact]
-        public void AddTelemetry_WhitespaceServiceName_DoesNotThrow()
-        {
-            var services = NewServices();
-            var ex = Record.Exception(() =>
-                services.AddTelemetry(MinimalConfigure(o => o.ServiceName = "   ")));
-            Assert.Null(ex);
-        }
-
-        [Fact]
-        public void AddTelemetry_NullEnvironmentName_DoesNotThrow()
-        {
-            var services = NewServices();
-            var ex = Record.Exception(() =>
-                services.AddTelemetry(MinimalConfigure(o => o.EnvironmentName = null)));
-            Assert.Null(ex);
-        }
-
-        [Fact]
-        public void AddTelemetry_WhitespaceEnvironmentName_DoesNotThrow()
-        {
-            var services = NewServices();
-            var ex = Record.Exception(() =>
-                services.AddTelemetry(MinimalConfigure(o => o.EnvironmentName = "   ")));
-            Assert.Null(ex);
-        }
+    [Fact]
+    public void AddTelemetry_EmptyResourceAttributes_DoesNotThrow()
+    {
+        var services = NewServices();
+        var ex = Record.Exception(() =>
+            services.AddTelemetry(MinimalConfigure(o => o.ResourceAttributes = [])));
+        Assert.Null(ex);
     }
 }
