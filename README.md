@@ -77,8 +77,9 @@ All options are set under the `Telemetry` key in `appsettings.json`.
     "Enabled":         true,
     "Endpoint":        "http://otel-collector:4318",
     "ServiceName":     "my-api",
+    "EnvironmentName":  "Stage",
     "ResourceAttributes": {
-      "environment": "Stage"
+      "team": "backend"
     }
   }
 }
