@@ -7,6 +7,9 @@
     <File Path="../LICENSE" />
     <File Path="../README.md" />
   </Folder>
+  <Folder Name="/.claude/">
+    <File Path="../.claude/commands/release.md" />
+  </Folder>
   <Folder Name="/Infrastructure/" />
   <Folder Name="/Infrastructure/Docker/">
     <File Path="../infrastructure/docker/docker-compose.jaeger.yml" />
