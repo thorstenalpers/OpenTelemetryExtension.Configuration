@@ -107,7 +107,7 @@ builder.Services.AddTelemetry(o =>
 
 ## Backend Examples
 
-See the [deploy folder](./deploy) for Docker Compose files and the [sample project](./src/OpenTelemetryExtension.Configuration.Sample) for full `appsettings` configurations.
+See the [infrastructure folder](./infrastructure) for Docker Compose files and Helm charts, and the [sample project](./src/OpenTelemetryExtension.Configuration.Sample) for full `appsettings` configurations.
 
 ### .NET Aspire Dashboard
 
