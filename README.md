@@ -175,10 +175,7 @@ ready-to-run configuration for every supported backend. Each backend has:
 |---|---|---|---|
 | .NET Aspire Dashboard | `infrastructure/docker/docker-install-aspire-dashboard.cmd` *(or Helm: `helm/helm-install-aspire-dashboard.cmd`)* | `Start Aspire` | <http://localhost:31888> |
 | Jaeger | `infrastructure/docker/docker-install-jaeger.cmd` | `Start Jaeger` | <http://localhost:16686> |
-| Grafana Loki *(logs only)* | `infrastructure/docker/docker-install-loki.cmd` | `Start Loki` | <http://localhost:3000> (Grafana, `admin`/`admin`) |
 | OpenObserve | `infrastructure/helm/helm-install-openobserve.cmd` | `Start OpenObserve Http` / `Start OpenObserve Grpc` | <http://localhost:30117> (`admin@web.de`/`admin`) |
-| OpenSearch | `infrastructure/docker/docker-install-opensearch.cmd` | `Start OpenSearch` | <http://localhost:5601> (OpenSearch Dashboards) |
-| SigNoz | `infrastructure/helm/helm-install-signoz.cmd` | `Start SigNoz` | SigNoz frontend service (see `kubectl get svc`) |
 
 > **Tip — viewing logs in the Aspire Dashboard:** after starting the app with the
 > `Start Aspire` profile, open <http://localhost:31888>, then go to the
@@ -217,41 +214,6 @@ gRPC endpoint is exposed on NodePort `31889` (Helm) or host port `31889` (Docker
 }
 ```
 
-### Grafana Loki *(logs only)* — `appsettings.loki.json`
-
-```json
-{
-  "Telemetry": {
-    "Protocol": "HttpProtobuf",
-    "Endpoint": "http://localhost:3100/otlp",
-    "Headers": ""
-  }
-}
-```
-
-### SigNoz — `appsettings.signoz.json`
-
-```json
-{
-  "Telemetry": {
-    "Protocol": "HttpProtobuf",
-    "Endpoint": "http://localhost:50709",
-    "Headers": ""
-  }
-}
-```
-
-### OpenSearch — `appsettings.opensearch.json`
-
-```json
-{
-  "Telemetry": {
-    "Protocol": "HttpProtobuf",
-    "Endpoint": "http://localhost:30318",
-    "Headers": ""
-  }
-}
-```
 
 ### OpenObserve — HTTP/protobuf — `appsettings.openobserve-http.json`
 
@@ -265,20 +227,6 @@ gRPC endpoint is exposed on NodePort `31889` (Helm) or host port `31889` (Docker
 }
 ```
 
-### OpenObserve — gRPC — `appsettings.openobserve-grpc.json`
-
-```json
-{
-  "Telemetry": {
-    "Protocol": "Grpc",
-    "Endpoint": "http://localhost:30118",
-    "Headers": "Authorization=Basic <base64>,organization=default,stream-name=default"
-  }
-}
-```
-
-> The `Authorization` header is `Basic base64(email:password)`. Replace `<base64>`
-> with your own credentials.
 
 ---
 
