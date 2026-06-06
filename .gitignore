@@ -94,3 +94,6 @@ yarn-error.log*
 
 **/TestResult/
 /test.html.lnk
+
+# OpenObserve docker runtime data
+infrastructure/docker/openobserve-data/
