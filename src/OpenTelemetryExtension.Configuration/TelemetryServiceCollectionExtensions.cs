@@ -4,6 +4,7 @@ using System;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Reflection;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -145,7 +146,7 @@ public static class TelemetryServiceCollectionExtensions
                         opt.RecordException = options.RecordExceptions;
                         if (options.ExcludedPaths.Length > 0)
                         {
-                            opt.Filter = ctx => !options.ExcludedPaths.Any(p => ctx.Request.Path.StartsWithSegments(p));
+                            opt.Filter = ctx => ShouldInstrument(ctx.Request.Path, options.ExcludedPaths);
                         }
                     });
                 }
@@ -223,4 +224,14 @@ public static class TelemetryServiceCollectionExtensions
         }
 #pragma warning restore CS0618
     }
+
+    /// <summary>
+    /// Determines whether a request to <paramref name="path"/> should be instrumented,
+    /// i.e. its path does not start (segment-wise) with any of <paramref name="excludedPaths"/>.
+    /// </summary>
+    /// <param name="path">The incoming request path.</param>
+    /// <param name="excludedPaths">Path prefixes to exclude from instrumentation.</param>
+    /// <returns><c>true</c> if the request should be instrumented; otherwise <c>false</c>.</returns>
+    internal static bool ShouldInstrument(PathString path, string[] excludedPaths)
+        => !excludedPaths.Any(p => path.StartsWithSegments(p));
 }

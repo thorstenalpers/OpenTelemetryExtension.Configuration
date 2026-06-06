@@ -10,6 +10,17 @@ public class TelemetryServiceCollectionExtensionsTests
 
     private static IServiceCollection NewServices() => new ServiceCollection();
 
+    // Forces the lazy OpenTelemetry configuration lambdas (resource builder,
+    // exporters, instrumentation) to actually execute by resolving the signal
+    // providers from the built container.
+    private static void BuildAndResolveProviders(IServiceCollection services)
+    {
+        var provider = services.BuildServiceProvider();
+        _ = provider.GetService<TracerProvider>();
+        _ = provider.GetService<MeterProvider>();
+        _ = provider.GetRequiredService<ILoggerFactory>().CreateLogger("test");
+    }
+
     private static Action<TelemetryOptions> MinimalConfigure(Action<TelemetryOptions>? extra = null) =>
         o =>
         {
@@ -218,13 +229,16 @@ public class TelemetryServiceCollectionExtensionsTests
     public void AddTelemetry_InstrumentationFlagsOff_DoesNotThrow()
     {
         var services = NewServices();
-        var ex = Record.Exception(() => services.AddTelemetry(MinimalConfigure(o =>
+        services.AddTelemetry(MinimalConfigure(o =>
         {
             o.EnableAspNetCoreInstrumentation = false;
             o.EnableHttpClientInstrumentation = false;
             o.EnableSqlClientInstrumentation = false;
             o.EnableRuntimeInstrumentation = false;
-        })));
+        }));
+
+        var ex = Record.Exception(() => BuildAndResolveProviders(services));
+
         Assert.Null(ex);
     }
 
@@ -232,7 +246,7 @@ public class TelemetryServiceCollectionExtensionsTests
     public void AddTelemetry_AllInstrumentationFlagsOn_DoesNotThrow()
     {
         var services = NewServices();
-        var ex = Record.Exception(() => services.AddTelemetry(MinimalConfigure(o =>
+        services.AddTelemetry(MinimalConfigure(o =>
         {
             o.EnableAspNetCoreInstrumentation = true;
             o.EnableHttpClientInstrumentation = true;
@@ -240,7 +254,10 @@ public class TelemetryServiceCollectionExtensionsTests
             o.EnableRuntimeInstrumentation = true;
             o.RecordExceptions = true;
             o.ExcludedPaths = ["/health"];
-        })));
+        }));
+
+        var ex = Record.Exception(() => BuildAndResolveProviders(services));
+
         Assert.Null(ex);
     }
 
@@ -257,8 +274,10 @@ public class TelemetryServiceCollectionExtensionsTests
     public void AddTelemetry_ExcludedPathsEmpty_DoesNotThrow()
     {
         var services = NewServices();
-        var ex = Record.Exception(() => services.AddTelemetry(MinimalConfigure(o =>
-            o.ExcludedPaths = [])));
+        services.AddTelemetry(MinimalConfigure(o => o.ExcludedPaths = []));
+
+        var ex = Record.Exception(() => BuildAndResolveProviders(services));
+
         Assert.Null(ex);
     }
 
@@ -275,8 +294,11 @@ public class TelemetryServiceCollectionExtensionsTests
     public void AddTelemetry_ResourceAttributes_DoesNotThrow()
     {
         var services = NewServices();
-        var ex = Record.Exception(() => services.AddTelemetry(MinimalConfigure(o =>
-            o.ResourceAttributes = new Dictionary<string, string> { ["team"] = "backend", ["region"] = "eu-west-1" })));
+        services.AddTelemetry(MinimalConfigure(o =>
+            o.ResourceAttributes = new Dictionary<string, string> { ["team"] = "backend", ["region"] = "eu-west-1" }));
+
+        var ex = Record.Exception(() => BuildAndResolveProviders(services));
+
         Assert.Null(ex);
     }
 
@@ -340,11 +362,14 @@ public class TelemetryServiceCollectionExtensionsTests
     public void AddTelemetry_WithServiceNameAndEnvironmentName_DoesNotThrow()
     {
         var services = NewServices();
-        var ex = Record.Exception(() => services.AddTelemetry(MinimalConfigure(o =>
+        services.AddTelemetry(MinimalConfigure(o =>
         {
             o.ServiceName = "my-api";
             o.EnvironmentName = "production";
-        })));
+        }));
+
+        var ex = Record.Exception(() => BuildAndResolveProviders(services));
+
         Assert.Null(ex);
     }
 
@@ -354,8 +379,10 @@ public class TelemetryServiceCollectionExtensionsTests
     public void AddTelemetry_ProtocolHttpProtobuf_DoesNotThrow()
     {
         var services = NewServices();
-        var ex = Record.Exception(() => services.AddTelemetry(MinimalConfigure(o =>
-            o.Protocol = OtlpExportProtocol.HttpProtobuf)));
+        services.AddTelemetry(MinimalConfigure(o => o.Protocol = OtlpExportProtocol.HttpProtobuf));
+
+        var ex = Record.Exception(() => BuildAndResolveProviders(services));
+
         Assert.Null(ex);
     }
 
@@ -363,8 +390,10 @@ public class TelemetryServiceCollectionExtensionsTests
     public void AddTelemetry_ProtocolGrpc_DoesNotThrow()
     {
         var services = NewServices();
-        var ex = Record.Exception(() => services.AddTelemetry(MinimalConfigure(o =>
-            o.Protocol = OtlpExportProtocol.Grpc)));
+        services.AddTelemetry(MinimalConfigure(o => o.Protocol = OtlpExportProtocol.Grpc));
+
+        var ex = Record.Exception(() => BuildAndResolveProviders(services));
+
         Assert.Null(ex);
     }
 
@@ -459,70 +488,41 @@ public class TelemetryServiceCollectionExtensionsTests
         Assert.Null(ex);
     }
 
-    [Fact]
-    public void Filter_HealthPath_ReturnsFalse()
+    // ── ShouldInstrument (request filter logic) ───────────────────────────
+
+    [Theory]
+    [InlineData("/health", false)]       // exact excluded path → not instrumented
+    [InlineData("/health/live", false)]  // sub-segment of excluded → not instrumented
+    [InlineData("/healthz", true)]       // NOT a full segment match → instrumented
+    [InlineData("/api/orders", true)]    // unrelated path → instrumented
+    [InlineData("/", true)]              // root → instrumented
+    public void ShouldInstrument_RespectsExcludedPaths(string path, bool expectedInstrument)
     {
-        // Arrange – simulate the filter lambda directly
-        Func<HttpContext, bool> filter =
-            ctx => !ctx.Request.Path.StartsWithSegments("/health");
+        var result = TelemetryServiceCollectionExtensions.ShouldInstrument(
+            new PathString(path), ["/health"]);
 
-        var context = new DefaultHttpContext();
-        context.Request.Path = "/health";
+        Assert.Equal(expectedInstrument, result);
+    }
 
-        // Act
-        var result = filter(context);
+    [Theory]
+    [InlineData("/health", false)]
+    [InlineData("/metrics", false)]
+    [InlineData("/api", true)]
+    public void ShouldInstrument_MultipleExcludedPaths(string path, bool expectedInstrument)
+    {
+        var result = TelemetryServiceCollectionExtensions.ShouldInstrument(
+            new PathString(path), ["/health", "/metrics"]);
 
-        // Assert
-        Assert.False(result);
+        Assert.Equal(expectedInstrument, result);
     }
 
     [Fact]
-    public void Filter_HealthSubPath_ReturnsFalse()
+    public void ShouldInstrument_EmptyExcludedPaths_AlwaysInstruments()
     {
-        Func<HttpContext, bool> filter =
-            ctx => !ctx.Request.Path.StartsWithSegments("/health");
+        var result = TelemetryServiceCollectionExtensions.ShouldInstrument(
+            new PathString("/health"), []);
 
-        var context = new DefaultHttpContext();
-        context.Request.Path = "/health/live";
-
-        Assert.False(filter(context));
-    }
-
-    [Fact]
-    public void Filter_NonHealthPath_ReturnsTrue()
-    {
-        Func<HttpContext, bool> filter =
-            ctx => !ctx.Request.Path.StartsWithSegments("/health");
-
-        var context = new DefaultHttpContext();
-        context.Request.Path = "/api/orders";
-
-        Assert.True(filter(context));
-    }
-
-    [Fact]
-    public void Filter_RootPath_ReturnsTrue()
-    {
-        Func<HttpContext, bool> filter =
-            ctx => !ctx.Request.Path.StartsWithSegments("/health");
-
-        var context = new DefaultHttpContext();
-        context.Request.Path = "/";
-
-        Assert.True(filter(context));
-    }
-
-    [Fact]
-    public void Filter_HealthPrefix_InLongerPath_ReturnsFalse()
-    {
-        Func<HttpContext, bool> filter =
-            ctx => !ctx.Request.Path.StartsWithSegments("/health");
-
-        var context = new DefaultHttpContext();
-        context.Request.Path = "/healthz";
-
-        // StartsWithSegments matches full segments only — /healthz is NOT /health
-        Assert.True(filter(context));
+        Assert.True(result);
     }
 
     // ── Resource configuration ────────────────────────────────────────────────
