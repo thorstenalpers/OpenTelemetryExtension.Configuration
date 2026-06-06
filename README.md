@@ -1,9 +1,4 @@
-<table border="0" cellspacing="0" cellpadding="0">
-  <tr border="0">
-    <td border="0" valign="middle"><img src="https://raw.githubusercontent.com/thorstenalpers/OpenTelemetryExtension.Configuration/main/src/OpenTelemetryExtension.Configuration/logo.png" alt="" width="40" /></td>
-    <td border="0" valign="middle"><h1>&nbsp;OpenTelemetryExtension.Configuration</h1></td>
-  </tr>
-</table>
+# <img src="https://raw.githubusercontent.com/thorstenalpers/OpenTelemetryExtension.Configuration/main/src/OpenTelemetryExtension.Configuration/logo.png" alt="" height="32" align="middle" /> OpenTelemetryExtension.Configuration
 
 [![CI](https://github.com/thorstenalpers/OpenTelemetryExtension.Configuration/actions/workflows/ci.yml/badge.svg)](https://github.com/thorstenalpers/OpenTelemetryExtension.Configuration/actions/workflows/ci.yml)
 [![Coverage Status](https://coveralls.io/repos/github/thorstenalpers/OpenTelemetryExtension.Configuration/badge.svg?branch=develop)](https://coveralls.io/github/thorstenalpers/OpenTelemetryExtension.Configuration?branch=develop)
