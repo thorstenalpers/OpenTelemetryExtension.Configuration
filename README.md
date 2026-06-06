@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="https://raw.githubusercontent.com/thorstenalpers/OpenTelemetryExtension.Configuration/main/src/OpenTelemetryExtension.Configuration/logo.png" alt="OpenTelemetryExtension.Configuration" width="128" />
+</p>
+
 # OpenTelemetryExtension.Configuration
 
 [![CI](https://github.com/thorstenalpers/OpenTelemetryExtension.Configuration/actions/workflows/ci.yml/badge.svg)](https://github.com/thorstenalpers/OpenTelemetryExtension.Configuration/actions/workflows/ci.yml)
