@@ -20,6 +20,7 @@ fullnameOverride: ""
 openobserve:
   rootEmail: admin@web.de
   rootPassword: admin
+  authHeader: "Basic YWRtaW5Ad2ViLmRlOmFkbWlu"  # admin@web.de:admin
   
 # This section builds out the service account more information can be found here: https://kubernetes.io/docs/concepts/security/service-accounts/
 serviceAccount:
@@ -59,9 +60,9 @@ service:
       port: 5080
       targetPort: 5080
       nodePort: 30117
-    - name: grpc          
-      port: 5081    
-      targetPort: 5081  
+    - name: grpc
+      port: 5081
+      targetPort: 5081
       nodePort: 30118
       
 # This block is for setting up the ingress for more information can be found here: https://kubernetes.io/docs/concepts/services-networking/ingress/

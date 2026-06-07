@@ -7,10 +7,11 @@ services:
       - "4317:4317"
       - "4318:4318"
     environment:
-      ZO_ROOT_USER_EMAIL: root@example.com
-      ZO_ROOT_USER_PASSWORD: StrongPassword123
+      ZO_ROOT_USER_EMAIL: admin@web.de
+      ZO_ROOT_USER_PASSWORD: admin
       ZO_DATA_DIR: /data
       ZO_OTLP_ENABLED: "true"
+      ZO_AUTH_HEADER: "Basic YWRtaW5Ad2ViLmRlOmFkbWlu"
     volumes:
       - ./openobserve-data:/data
     restart: unless-stopped

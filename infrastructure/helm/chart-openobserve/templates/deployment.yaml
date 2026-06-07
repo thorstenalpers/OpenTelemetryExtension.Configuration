@@ -55,6 +55,8 @@ spec:
               value: "/data"
             - name: ZO_OTLP_ENABLED
               value: "true"
+            - name: ZO_AUTH_HEADER
+              value: {{ .Values.openobserve.authHeader | quote }}
           {{- with .Values.livenessProbe }}
           livenessProbe:
             {{- toYaml . | nindent 12 }}
