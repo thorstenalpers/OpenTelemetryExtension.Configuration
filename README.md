@@ -284,7 +284,7 @@ Traces from the sample app shown in the Jaeger UI:
   "Telemetry": {
     "Protocol": "HttpProtobuf",
     "Endpoint": "http://localhost:30117/api/default",
-    "Headers": "Authorization=Basic <base64>,stream-name=default"
+    "Headers": "Authorization=Basic YWRtaW5Ad2ViLmRlOmFkbWlu,stream-name=default"
   }
 }
 ```
