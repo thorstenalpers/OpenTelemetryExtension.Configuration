@@ -532,6 +532,47 @@ public class TelemetryServiceCollectionExtensionsTests
         Assert.Null(ex);
     }
 
+    [Fact]
+    public void AddTelemetry_IConfiguration_CustomSectionName_Binds()
+    {
+        var config = BuildConfig(new Dictionary<string, string?>
+        {
+            ["MyTelemetry:Enabled"] = "true",
+            ["MyTelemetry:Endpoint"] = "http://localhost:4318",
+        });
+        var services = NewServices();
+
+        var ex = Record.Exception(() => services.AddTelemetry(config, "MyTelemetry"));
+
+        Assert.Null(ex);
+    }
+
+    [Fact]
+    public void AddTelemetry_IConfiguration_CustomSectionNameWithConfigure_Binds()
+    {
+        var invoked = false;
+        var config = BuildConfig(new Dictionary<string, string?>
+        {
+            ["MyTelemetry:Enabled"] = "true",
+            ["MyTelemetry:Endpoint"] = "http://localhost:4318",
+        });
+        var services = NewServices();
+
+        services.AddTelemetry(config, o => o.ConfigureTracing = _ => invoked = true, "MyTelemetry");
+        services.BuildServiceProvider().GetService<TracerProvider>();
+
+        Assert.True(invoked);
+    }
+
+    [Fact]
+    public void AddTelemetry_IConfiguration_MissingCustomSection_Throws()
+    {
+        var config = BuildConfig(new Dictionary<string, string?> { ["Telemetry:Enabled"] = "true" });
+        var services = NewServices();
+
+        Assert.Throws<InvalidOperationException>(() => services.AddTelemetry(config, "MyTelemetry"));
+    }
+
     // ── ShouldInstrument (request filter logic) ───────────────────────────
 
     [Theory]

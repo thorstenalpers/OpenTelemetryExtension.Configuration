@@ -44,14 +44,14 @@ builder.Services.AddTelemetry(builder.Configuration);
 ```json
 {
   "Telemetry": {
-    "Enabled": true,
     "Endpoint": "http://localhost:4318",
     "ServiceName": "my-api"
   }
 }
 ```
 
-That's it — tracing, metrics and logging are exported via OTLP.
+That's it — tracing, metrics and logging are exported via OTLP. Telemetry is
+enabled by default; set `"Enabled": false` to turn it off.
 
 ---
 
@@ -61,7 +61,7 @@ All options live under the `Telemetry` key in `appsettings.json`.
 
 | Property | Type | Default | Description |
 |---|---|---|---|
-| `Enabled` | `bool` | `false` | Must be `true` to activate telemetry. |
+| `Enabled` | `bool` | `true` | Set to `false` to disable telemetry (no OpenTelemetry services are registered). |
 | `Endpoint` | `Uri` | *(required)* | OTLP collector endpoint, e.g. `http://localhost:4318`. |
 | `Headers` | `string` | `""` | Exporter headers. Format: `key1=value1,key2=value2`. |
 | `Protocol` | `string` | `HttpProtobuf` | `HttpProtobuf` (port 4318) or `Grpc` (port 4317). |
@@ -83,6 +83,25 @@ All options live under the `Telemetry` key in `appsettings.json`.
 > `ConfigureTracing`, `ConfigureMetrics` and `ConfigureLogging` are code-only callbacks — see [Code configuration](#-code-configuration).
 >
 > For every key with its default value, see the [Full configuration reference](#-full-configuration-reference) below.
+
+### Custom section name
+
+The section defaults to `Telemetry`, but you can bind any section by passing its name:
+
+```csharp
+builder.Services.AddTelemetry(builder.Configuration, "MyTelemetry");
+// or together with a code callback:
+builder.Services.AddTelemetry(builder.Configuration, o => { /* ... */ }, "MyTelemetry");
+```
+
+```json
+{
+  "MyTelemetry": {
+    "Endpoint": "http://localhost:4318",
+    "ServiceName": "my-api"
+  }
+}
+```
 
 ---
 
@@ -172,12 +191,12 @@ o.ConfigureTracing = tracing => tracing.AddSource("MyApp");
 
 ## 📋 Full configuration reference
 
-Every key with its **default** value (only `Enabled` and `Endpoint` are required to get started):
+Every key with its **default** value (only `Endpoint` is required to get started — telemetry is enabled by default):
 
 ```jsonc
 {
   "Telemetry": {
-    "Enabled": false,                          // master switch — set true to activate
+    "Enabled": true,                           // master switch — set false to disable
     "Endpoint": "http://localhost:4318",       // OTLP collector endpoint (required)
     "Headers": "",                             // exporter headers: "key1=value1,key2=value2"
     "Protocol": "HttpProtobuf",                // "HttpProtobuf" (4318) or "Grpc" (4317)
@@ -260,7 +279,7 @@ gRPC endpoint is exposed on NodePort `31889` (Helm) or host port `31889` (Docker
 
 Traces, metrics and logs from the sample app shown live in the Aspire Dashboard UI:
 
-![.NET Aspire Dashboard](./assets/Aspire-Dashboard.webp)
+![](./assets/Aspire-Dashboard.webp)
 
 ### Jaeger — `appsettings.jaeger.json`
 
@@ -275,7 +294,7 @@ Traces, metrics and logs from the sample app shown live in the Aspire Dashboard 
 
 Traces from the sample app shown in the Jaeger UI:
 
-![Jaeger](./assets/Jaeger.webp)
+![](./assets/Jaeger.webp)
 
 ### OpenObserve — HTTP/protobuf — `appsettings.openobserve-http.json`
 
@@ -291,7 +310,7 @@ Traces from the sample app shown in the Jaeger UI:
 
 The same telemetry explored in the OpenObserve UI:
 
-![OpenObserve](./assets/OpenObserve.webp)
+![](./assets/OpenObserve.webp)
 
 
 ---

@@ -46,6 +46,7 @@ public class Program
                 logger.LogWarning("Get Weatherforecast endpoint called");
 
                 await Task.Delay(TimeSpan.FromSeconds(10));
+                logger.LogWarning("Demo response delay of 10 seconds completed");
 
                 var entities = await db.WeatherForecasts.ToListAsync();
                 return Results.Ok(entities);

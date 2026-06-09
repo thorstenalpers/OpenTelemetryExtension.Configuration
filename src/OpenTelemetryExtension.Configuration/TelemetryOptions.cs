@@ -15,7 +15,7 @@ using OpenTelemetry.Trace;
 /// <code>
 /// "Telemetry": {
 ///   "Endpoint":                        "http://localhost:4318",
-///   "Enabled":                         false,
+///   "Enabled":                         true,
 ///   "Headers":                         "",
 ///   "Protocol":                        "HttpProtobuf",
 ///   "ServiceName":                     null,
@@ -43,9 +43,9 @@ public sealed class TelemetryOptions
     /// <summary>
     /// Whether telemetry is enabled at all.
     /// If <c>false</c>, no OpenTelemetry services are registered.
-    /// Default: <c>false</c> — explicit opt-in required.
+    /// Default: <c>true</c>.
     /// </summary>
-    public bool Enabled { get; set; } = false;
+    public bool Enabled { get; set; } = true;
 
     /// <summary>
     /// OTLP endpoint for logs, traces and metrics.

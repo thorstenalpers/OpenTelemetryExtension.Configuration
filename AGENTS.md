@@ -26,14 +26,18 @@ release-notes/                                   # v{VERSION}.md per release
 
 ```csharp
 // IServiceCollection extensions
-services.AddTelemetry(configuration);                  // binds "Telemetry" section
-services.AddTelemetry(configuration, o => { ... });    // bind + code callback (combined)
-services.AddTelemetry(o => { o.Enabled = true; o.Endpoint = new Uri("..."); });
+services.AddTelemetry(configuration);                       // binds "Telemetry" section
+services.AddTelemetry(configuration, "CustomSection");      // custom section name
+services.AddTelemetry(configuration, o => { ... });         // bind + code callback (combined)
+services.AddTelemetry(configuration, o => { ... }, "Sec");  // combined + custom section
+services.AddTelemetry(o => { o.Endpoint = new Uri("..."); });
 ```
 
-`TelemetryOptions` is the single configuration model. `Enabled = false` is the
-safe default; `AddTelemetry()` is a no-op when disabled. `Endpoint` is
-`[Required]` and validated at registration time when `Enabled = true`.
+`TelemetryOptions` is the single configuration model. `Enabled` defaults to
+`true`; set it to `false` to make `AddTelemetry()` a no-op. `Endpoint` is
+`[Required]` and validated at registration time when `Enabled = true`. The
+configuration section name (`Telemetry`) is overridable via the `sectionName`
+parameter on the `IConfiguration` overloads.
 
 ## Build & test
 

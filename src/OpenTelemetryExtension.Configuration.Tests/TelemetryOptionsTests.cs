@@ -11,8 +11,8 @@ public class TelemetryOptionsTests
         => Assert.Equal("Telemetry", TelemetryOptions.SectionName);
 
     [Fact]
-    public void Defaults_Enabled_IsFalse()
-        => Assert.False(new TelemetryOptions().Enabled);
+    public void Defaults_Enabled_IsTrue()
+        => Assert.True(new TelemetryOptions().Enabled);
 
     [Fact]
     public void Defaults_Endpoint_IsNull()
