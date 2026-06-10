@@ -170,8 +170,7 @@ only collects metrics from meters you have explicitly registered with
 ```csharp
 // 1. Create a Meter and an instrument somewhere in your app
 private static readonly Meter Meter = new("MyApp.Orders");
-private static readonly Counter<long> OrdersPlaced =
-    Meter.CreateCounter<long>("orders.placed");
+private static readonly Counter<long> OrdersPlaced = Meter.CreateCounter<long>("orders.placed");
 
 // ... later
 OrdersPlaced.Add(1);
@@ -266,8 +265,7 @@ builder.Services.AddTelemetry(builder.Configuration, opt =>
         {
             // Microsoft SQL Server / System.Data.SqlClient
             // NuGet: OpenTelemetry.Instrumentation.SqlClient
-            tracing.AddSqlClientInstrumentation(sql =>
-                sql.RecordException = opt.RecordExceptions);
+            tracing.AddSqlClientInstrumentation(sql => sql.RecordException = opt.RecordExceptions);
 
             // PostgreSQL (Npgsql)
             // NuGet: OpenTelemetry.Instrumentation.Npgsql
