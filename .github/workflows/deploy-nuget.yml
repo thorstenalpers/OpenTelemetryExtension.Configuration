@@ -44,7 +44,7 @@ jobs:
         dotnet build "${{ env.Test_Project_Path }}" --configuration Release --no-restore
 
     - name: Run unit tests
-      run: dotnet test "${{ env.Test_Project_Path }}" --configuration Release --no-build --filter "Category!=Integration" --logger "console;verbosity=detailed"
+      run: dotnet test "${{ env.Test_Project_Path }}" --configuration Release --no-build --filter "Category=Unit" --logger "console;verbosity=detailed"
           
     - name: Pack NuGet Package
       run: dotnet pack "${{ env.Nuget_Project_Path }}" --configuration Release --no-build --output ./nupkg

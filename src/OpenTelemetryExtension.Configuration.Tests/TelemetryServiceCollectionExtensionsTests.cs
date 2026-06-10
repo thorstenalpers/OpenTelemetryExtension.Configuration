@@ -4,6 +4,7 @@ using Microsoft.Extensions.Configuration;
 
 namespace OpenTelemetryExtension.Configuration.Tests;
 
+[Trait("Category", "Unit")]
 public class TelemetryServiceCollectionExtensionsTests
 {
     // ── Helpers ───────────────────────────────────────────────────────────

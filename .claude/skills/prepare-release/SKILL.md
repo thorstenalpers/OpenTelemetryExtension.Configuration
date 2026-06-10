@@ -34,7 +34,7 @@ prepare the repository and open the PR.
 
 7. **Build & test (green required)**
    - `dotnet build OpenTelemetryExtension.slnx -c Release`
-   - `dotnet test OpenTelemetryExtension.slnx -c Release`
+   - `dotnet test OpenTelemetryExtension.slnx -c Release --filter "Category=Unit"` (unit tests only; integration tests need the live OpenObserve/SQL stack)
 
 8. **End-to-end smoke test** — prove telemetry actually reaches a backend.
    Requires a local Kubernetes cluster (k3s in WSL2) with Helm + kubectl.

@@ -53,7 +53,7 @@ infrastructure required.
 
 **Whenever you add or change a feature, run the unit tests. When the telemetry
 stack is running, also run the integration tests** (see below). **CI runs the
-unit tests only** (the workflows filter out `Category=Integration`).
+unit tests only** (the workflows filter on `Category=Unit`).
 
 ### Integration tests
 
