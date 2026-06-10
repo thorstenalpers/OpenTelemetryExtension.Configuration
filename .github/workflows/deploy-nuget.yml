@@ -30,14 +30,21 @@ jobs:
       with:
         dotnet-version: 10.x
 
+    # Build only the published library and the unit tests. The solution also
+    # contains a WPF sample (net10.0-windows) that cannot build on Linux and
+    # integration tests that need a live backend — neither belongs in the deploy.
     - name: Restore
-      run: dotnet restore "${{ env.Solution_Name }}"
+      run: |
+        dotnet restore "${{ env.Nuget_Project_Path }}"
+        dotnet restore "${{ env.Test_Project_Path }}"
 
     - name: Build
-      run: dotnet build "${{ env.Solution_Name }}" --configuration Release  --no-restore
+      run: |
+        dotnet build "${{ env.Nuget_Project_Path }}" --configuration Release --no-restore
+        dotnet build "${{ env.Test_Project_Path }}" --configuration Release --no-restore
 
-    - name: Run tests
-      run: dotnet test "${{ env.Test_Project_Path }}" --configuration Release --logger "console;verbosity=detailed"  --logger "console;verbosity=detailed"  
+    - name: Run unit tests
+      run: dotnet test "${{ env.Test_Project_Path }}" --configuration Release --no-build --filter "Category!=Integration" --logger "console;verbosity=detailed"
           
     - name: Pack NuGet Package
       run: dotnet pack "${{ env.Nuget_Project_Path }}" --configuration Release --no-build --output ./nupkg

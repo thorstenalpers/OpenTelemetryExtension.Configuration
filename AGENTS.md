@@ -13,7 +13,8 @@ ASP.NET Core via a single `AddTelemetry()` call and `appsettings.json`.
 ```
 src/
   OpenTelemetryExtension.Configuration/             # Library (netstandard2.0 + net10.0)
-  OpenTelemetryExtension.Configuration.Tests/       # xUnit tests (net10.0)
+  OpenTelemetryExtension.Configuration.Tests/       # xUnit unit tests (net10.0, in-process)
+  OpenTelemetryExtension.Configuration.IntegrationTests/  # Integration tests (net10.0) — query a live OpenObserve
   OpenTelemetryExtension.Configuration.Sample.WebApi/  # ASP.NET Core sample app (net10.0)
   OpenTelemetryExtension.Configuration.Sample.Wpf/     # WPF desktop sample app (net10.0-windows)
   OpenTelemetryExtension.slnx                    # Solution file
@@ -44,11 +45,29 @@ parameter on the `IConfiguration` overloads.
 
 ```bash
 dotnet build OpenTelemetryExtension.slnx -c Release
-dotnet test  OpenTelemetryExtension.slnx -c Release"
+dotnet test  src/OpenTelemetryExtension.Configuration.Tests -c Release   # unit tests
 ```
 
-Tests use **xUnit + Moq**. No integration test infrastructure needed — all
-tests run in-process via `ServiceCollection`.
+Unit tests use **xUnit + Moq** and run in-process via `ServiceCollection` — no
+infrastructure required.
+
+**Whenever you add or change a feature, run the unit tests. When the telemetry
+stack is running, also run the integration tests** (see below). **CI runs the
+unit tests only** (the workflows filter out `Category=Integration`).
+
+### Integration tests
+
+`OpenTelemetryExtension.Configuration.IntegrationTests` exercises the real export
+path: it emits logs, metrics and traces (and a SQL Server span) through
+`AddTelemetry()` to a running **OpenObserve** instance and queries its `_search`
+API to confirm the data was ingested.
+
+- Needs the OpenObserve Helm chart (`infrastructure/helm/helm-install-openobserve.cmd`);
+  the SQL Server chart (`helm-install-sqlserver.cmd`) is required only for the SQL test.
+- Every test is `[Trait("Category", "Integration")]` and **auto-skips** when the
+  backend (or SQL Server) is unreachable, so the suite stays green without the stack.
+- Endpoints/credentials default to the Helm chart values; override via `OTEL_IT_*` env vars.
+- Run: `dotnet test src/OpenTelemetryExtension.Configuration.IntegrationTests -c Release`.
 
 ## Language & framework
 
@@ -83,7 +102,11 @@ tests run in-process via `ServiceCollection`.
   no reflection hacks
 - Use `Record.Exception` (not `Assert.Throws<T>`) when asserting that no
   exception is thrown
-- Do not use `Thread.Sleep` or `Task.Delay` in tests
+- Do not use `Thread.Sleep` or `Task.Delay` in **unit** tests (integration tests
+  may poll the backend until telemetry is queryable)
+- Integration tests live in the `*.IntegrationTests` project, are marked
+  `[Trait("Category", "Integration")]` and assert against a live OpenObserve via
+  its `_search` API — see [Integration tests](#integration-tests)
 
 ## Versioning & release
 
@@ -115,7 +138,9 @@ tests run in-process via `ServiceCollection`.
 2. Wire it up in `TelemetryServiceCollectionExtensions` under the appropriate
    signal block
 3. Add default-value test in `TelemetryOptionsTests.cs`
-4. Add enabled/disabled integration tests in
+4. Add enabled/disabled unit tests in
    `TelemetryServiceCollectionExtensionsTests.cs`
 5. Add the option to the `<example>` block in the XML doc on `TelemetryOptions`
 6. Update `README.md` configuration reference table
+7. Run the unit tests; when the telemetry stack is running, run the integration
+   tests too (see [Integration tests](#integration-tests))

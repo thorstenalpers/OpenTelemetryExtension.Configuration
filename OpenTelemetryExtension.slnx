@@ -77,4 +77,5 @@
   <Project Path="src/OpenTelemetryExtension.Configuration.Sample.Wpf/OpenTelemetryExtension.Configuration.Sample.Wpf.csproj" />
   <Project Path="src/OpenTelemetryExtension.Configuration/OpenTelemetryExtension.Configuration.csproj" />
   <Project Path="src/OpenTelemetryExtension.Configuration.Tests/OpenTelemetryExtension.Configuration.Tests.csproj" />
+  <Project Path="src/OpenTelemetryExtension.Configuration.IntegrationTests/OpenTelemetryExtension.Configuration.IntegrationTests.csproj" />
 </Solution>
