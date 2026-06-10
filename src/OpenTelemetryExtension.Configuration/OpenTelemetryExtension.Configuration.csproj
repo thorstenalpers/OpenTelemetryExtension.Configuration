@@ -10,7 +10,7 @@
 		<Authors>Thorsten Alpers</Authors>
 		<Copyright>Copyright © $([System.DateTime]::Now.Year) Thorsten Alpers</Copyright>
 		<Description>Configurable OpenTelemetry setup for .NET applications providing tracing, metrics, and logging via OTLP, configurable through code or appsettings.json.</Description>
-		<PackageTags>OpenTelemetry;Otel;Tracing;Traces;Metrics;Logs;Logging;OTLP;ASP.NET Core;WPF;WinForms;Console;UWP;MAUI;appsettings;Configuration;Instrumentation;Telemetry;HttpClient;SqlClient;gRPC</PackageTags>
+		<PackageTags>OpenTelemetry;Otel;Observability;OTLP;Tracing;Metrics;Logging;Telemetry;Configuration;appsettings;ASP.NET Core</PackageTags>
 		<PackageProjectUrl>https://github.com/thorstenalpers/OpenTelemetryExtension.Configuration</PackageProjectUrl>
 		<RepositoryUrl>https://github.com/thorstenalpers/OpenTelemetryExtension.Configuration</RepositoryUrl>
 		<RepositoryType>git</RepositoryType>
