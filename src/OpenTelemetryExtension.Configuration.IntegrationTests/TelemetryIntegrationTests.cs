@@ -1,7 +1,7 @@
 using System.Diagnostics;
 using System.Diagnostics.Metrics;
 using Microsoft.Extensions.Logging;
-using OpenTelemetryExtension.Configuration.IntegrationTests.Infrastructure;
+using OpenTelemetryExtension.Configuration.IntegrationTests.Utils;
 
 namespace OpenTelemetryExtension.Configuration.IntegrationTests;
 

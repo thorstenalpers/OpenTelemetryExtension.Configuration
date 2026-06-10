@@ -1,4 +1,4 @@
-namespace OpenTelemetryExtension.Configuration.IntegrationTests.Infrastructure;
+namespace OpenTelemetryExtension.Configuration.IntegrationTests.Utils;
 
 // A Fact that skips itself when the OpenObserve backend is not reachable, so the
 // suite stays green on machines without the telemetry stack running.

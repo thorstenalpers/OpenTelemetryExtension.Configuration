@@ -3,7 +3,7 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 
-namespace OpenTelemetryExtension.Configuration.IntegrationTests.Infrastructure;
+namespace OpenTelemetryExtension.Configuration.IntegrationTests.Utils;
 
 // Thin wrapper around the OpenObserve _search API used to assert that emitted
 // telemetry actually arrived. The API needs the root user credentials, not the
