@@ -5,7 +5,7 @@ using OpenTelemetry.Logs;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Trace;
 
-namespace OpenTelemetryExtension.Configuration.IntegrationTests;
+namespace OpenTelemetryExtension.Configuration.IntegrationTests.Infrastructure;
 
 // Builds a service provider wired up through the library's AddTelemetry() against
 // the OpenObserve OTLP endpoint, and exposes a force-flush so a test can assert

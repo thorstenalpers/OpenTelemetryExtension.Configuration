@@ -1,4 +1,4 @@
-namespace OpenTelemetryExtension.Configuration.IntegrationTests;
+namespace OpenTelemetryExtension.Configuration.IntegrationTests.Infrastructure;
 
 internal static class IntegrationConfig
 {

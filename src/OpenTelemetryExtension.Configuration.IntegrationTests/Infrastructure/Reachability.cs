@@ -1,6 +1,6 @@
 using System.Net.Sockets;
 
-namespace OpenTelemetryExtension.Configuration.IntegrationTests;
+namespace OpenTelemetryExtension.Configuration.IntegrationTests.Infrastructure;
 
 internal static class Reachability
 {

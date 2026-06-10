@@ -1,5 +1,6 @@
 using Microsoft.Data.SqlClient;
 using OpenTelemetry.Trace;
+using OpenTelemetryExtension.Configuration.IntegrationTests.Infrastructure;
 
 namespace OpenTelemetryExtension.Configuration.IntegrationTests;
 
