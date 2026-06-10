@@ -15,7 +15,7 @@ set -euo pipefail
 # of where the script was invoked from.
 cd "$(git rev-parse --show-toplevel)"
 
-SAMPLE_DIR="src/OpenTelemetryExtension.Configuration.Sample"
+SAMPLE_DIR="src/OpenTelemetryExtension.Configuration.Sample.WebApi"
 SWAGGER_URL="http://localhost:5021"   # http app url from launchSettings
 
 # 1. Start OpenObserve via its Helm chart

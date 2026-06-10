@@ -1,4 +1,4 @@
-namespace OpenTelemetryExtension.Configuration.Sample;
+namespace OpenTelemetryExtension.Configuration.Sample.WebApi;
 
 public class WeatherForecast
 {

@@ -14,7 +14,7 @@ Configurable OpenTelemetry setup for .NET applications providing **tracing, metr
 
 - **One-call setup** — tracing, metrics and logging via a single `AddTelemetry()`, configured from `appsettings.json` or code
 - **All three signals over OTLP** — HTTP/protobuf or gRPC, to any OTLP-compatible backend
-- **Built-in instrumentation** — `HttpClient`, SQL Client and .NET runtime metrics everywhere; ASP.NET Core instrumentation on web targets — each toggleable
+- **Built-in instrumentation** — `HttpClient` and .NET runtime metrics everywhere; ASP.NET Core instrumentation on web targets — each toggleable. Database instrumentation is opt-in via a one-liner (see [Databases](#databases))
 - **Sensible defaults** — configurable sampling, health-check path exclusion and exception recording work out of the box
 - **Startup validation** — misconfiguration fails fast with a clear error
 - **Extensible** — `ConfigureTracing`/`ConfigureMetrics`/`ConfigureLogging` hooks for custom sources, meters and providers
@@ -353,9 +353,23 @@ Every key with its **default** value (only `Endpoint` is required to get started
 
 ---
 
+## 🧪 Samples
+
+Two runnable samples live under [`src/`](./src):
+
+| Sample | Project | Demonstrates |
+|---|---|---|
+| **Web API** | [`…Sample.WebApi`](./src/OpenTelemetryExtension.Configuration.Sample.WebApi) | ASP.NET Core minimal API configured from `appsettings.json`, ready-to-run backend profiles, EF Core and opt-in SQL instrumentation. |
+| **WPF** | [`…Sample.Wpf`](./src/OpenTelemetryExtension.Configuration.Sample.Wpf) | Desktop app wiring `AddTelemetry()` through the **Generic Host**, emitting a custom `ActivitySource`/`Meter` and an `HttpClient` span on a button click. |
+
+The Web API sample drives the backend walkthrough below; the WPF sample exports
+to `http://localhost:4318` by default — point it at any of the backends here.
+
+---
+
 ## 🔌 Running Locally with a Backend
 
-The [sample project](./src/OpenTelemetryExtension.Configuration.Sample) ships
+The [Web API sample](./src/OpenTelemetryExtension.Configuration.Sample.WebApi) ships
 ready-to-run configurations for several popular backends (the three below are
 documented in full; more start scripts live in [`infrastructure/`](./infrastructure)). Each backend has:
 
@@ -370,7 +384,7 @@ documented in full; more start scripts live in [`infrastructure/`](./infrastruct
    - Helm scripts live in [`infrastructure/helm`](./infrastructure/helm) and need a local Kubernetes cluster (e.g. k3s in WSL2).
 2. **Run the sample** with the matching profile:
    ```bash
-   cd src/OpenTelemetryExtension.Configuration.Sample
+   cd src/OpenTelemetryExtension.Configuration.Sample.WebApi
    dotnet run --launch-profile "Start Aspire"
    ```
    Or pick the profile from the run dropdown in Visual Studio / Rider.

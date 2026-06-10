@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using OpenTelemetry.Trace;
 
-namespace OpenTelemetryExtension.Configuration.Sample;
+namespace OpenTelemetryExtension.Configuration.Sample.WebApi;
 
 public class Program
 {

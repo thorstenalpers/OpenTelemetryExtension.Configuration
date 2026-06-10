@@ -12,9 +12,10 @@ ASP.NET Core via a single `AddTelemetry()` call and `appsettings.json`.
 
 ```
 src/
-  OpenTelemetryExtension.Configuration/          # Library (netstandard2.0 + net10.0)
-  OpenTelemetryExtension.Configuration.Tests/    # xUnit tests (net10.0)
-  OpenTelemetryExtension.Configuration.Sample/   # ASP.NET Core sample app (net10.0)
+  OpenTelemetryExtension.Configuration/             # Library (netstandard2.0 + net10.0)
+  OpenTelemetryExtension.Configuration.Tests/       # xUnit tests (net10.0)
+  OpenTelemetryExtension.Configuration.Sample.WebApi/  # ASP.NET Core sample app (net10.0)
+  OpenTelemetryExtension.Configuration.Sample.Wpf/     # WPF desktop sample app (net10.0-windows)
   OpenTelemetryExtension.slnx                    # Solution file
 .github/workflows/
   ci.yml                                         # Build + test + coverage on push
@@ -102,8 +103,8 @@ tests run in-process via `ServiceCollection`.
 
 - Do not add `using` directives already covered by global/implicit usings
 - Do not add `// TODO` comments — raise an issue instead
-- Do not modify the `*.Sample` project for library behaviour changes (it is
-  excluded from code coverage)
+- Do not modify the `*.Sample.*` projects for library behaviour changes (they
+  are excluded from code coverage)
 - Do not add new public API surface without a corresponding test in
   `TelemetryOptionsTests.cs` or `TelemetryServiceCollectionExtensionsTests.cs`
 
