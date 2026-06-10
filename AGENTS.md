@@ -92,6 +92,11 @@ tests run in-process via `ServiceCollection`.
 - Do not change `<Version>` without also creating `release-notes/v{VERSION}.md`
 - NuGet publish is **manual** (`workflow_dispatch`) — never triggered
   automatically
+- The full release-prep workflow (decide SemVer, bump, update deps, build/test,
+  end-to-end smoke test, release notes, PR to `master`) is encoded in the
+  **`prepare-release`** skill at `.claude/skills/prepare-release/`. Run it via
+  Claude Code (`/prepare-release`) when cutting a release; it only prepares the
+  PR — publishing stays the manual `deploy-nuget.yml` trigger.
 
 ## What NOT to do
 

@@ -43,6 +43,8 @@ If your PR changes the public API or behaviour, please:
 
 PRs without a version bump are fine for documentation or refactoring that has no user-visible impact.
 
+> **Maintainers:** the release-prep steps (version decision, dependency updates, build/test, smoke test, release notes, release PR) are automated by the `prepare-release` Claude Code skill in [`.claude/skills/prepare-release/`](./.claude/skills/prepare-release/). It prepares the PR only — the actual NuGet publish remains the manual **Deploy Nuget** workflow.
+
 ## Adding a New Instrumentation Option
 
 Follow the checklist in [CLAUDE.md](./CLAUDE.md#adding-a-new-instrumentation-option).
