@@ -12,9 +12,11 @@ ASP.NET Core via a single `AddTelemetry()` call and `appsettings.json`.
 
 ```
 src/
-  OpenTelemetryExtension.Configuration/          # Library (netstandard2.0 + net10.0)
-  OpenTelemetryExtension.Configuration.Tests/    # xUnit tests (net10.0)
-  OpenTelemetryExtension.Configuration.Sample/   # ASP.NET Core sample app (net10.0)
+  OpenTelemetryExtension.Configuration/             # Library (netstandard2.0 + net10.0)
+  OpenTelemetryExtension.Configuration.Tests/       # xUnit unit tests (net10.0, in-process)
+  OpenTelemetryExtension.Configuration.IntegrationTests/  # Integration tests (net10.0) — query a live OpenObserve
+  OpenTelemetryExtension.Configuration.Sample.WebApi/  # ASP.NET Core sample app (net10.0)
+  OpenTelemetryExtension.Configuration.Sample.Wpf/     # WPF desktop sample app (net10.0-windows)
   OpenTelemetryExtension.slnx                    # Solution file
 .github/workflows/
   ci.yml                                         # Build + test + coverage on push
@@ -26,24 +28,46 @@ release-notes/                                   # v{VERSION}.md per release
 
 ```csharp
 // IServiceCollection extensions
-services.AddTelemetry(configuration);                  // binds "Telemetry" section
-services.AddTelemetry(configuration, o => { ... });    // bind + code callback (combined)
-services.AddTelemetry(o => { o.Enabled = true; o.Endpoint = new Uri("..."); });
+services.AddTelemetry(configuration);                       // binds "Telemetry" section
+services.AddTelemetry(configuration, "CustomSection");      // custom section name
+services.AddTelemetry(configuration, o => { ... });         // bind + code callback (combined)
+services.AddTelemetry(configuration, o => { ... }, "Sec");  // combined + custom section
+services.AddTelemetry(o => { o.Endpoint = new Uri("..."); });
 ```
 
-`TelemetryOptions` is the single configuration model. `Enabled = false` is the
-safe default; `AddTelemetry()` is a no-op when disabled. `Endpoint` is
-`[Required]` and validated at registration time when `Enabled = true`.
+`TelemetryOptions` is the single configuration model. `Enabled` defaults to
+`true`; set it to `false` to make `AddTelemetry()` a no-op. `Endpoint` is
+`[Required]` and validated at registration time when `Enabled = true`. The
+configuration section name (`Telemetry`) is overridable via the `sectionName`
+parameter on the `IConfiguration` overloads.
 
 ## Build & test
 
 ```bash
 dotnet build OpenTelemetryExtension.slnx -c Release
-dotnet test  OpenTelemetryExtension.slnx -c Release"
+dotnet test  src/OpenTelemetryExtension.Configuration.Tests -c Release   # unit tests
 ```
 
-Tests use **xUnit + Moq**. No integration test infrastructure needed — all
-tests run in-process via `ServiceCollection`.
+Unit tests use **xUnit + Moq** and run in-process via `ServiceCollection` — no
+infrastructure required.
+
+**Whenever you add or change a feature, run the unit tests. When the telemetry
+stack is running, also run the integration tests** (see below). **CI runs the
+unit tests only** (the workflows filter on `Category=Unit`).
+
+### Integration tests
+
+`OpenTelemetryExtension.Configuration.IntegrationTests` exercises the real export
+path: it emits logs, metrics and traces (and a SQL Server span) through
+`AddTelemetry()` to a running **OpenObserve** instance and queries its `_search`
+API to confirm the data was ingested.
+
+- Needs the OpenObserve Helm chart (`infrastructure/helm/helm-install-openobserve.cmd`);
+  the SQL Server chart (`helm-install-sqlserver.cmd`) is required only for the SQL test.
+- Every test is `[Trait("Category", "Integration")]` and **auto-skips** when the
+  backend (or SQL Server) is unreachable, so the suite stays green without the stack.
+- Endpoints/credentials default to the Helm chart values; override via `OTEL_IT_*` env vars.
+- Run: `dotnet test src/OpenTelemetryExtension.Configuration.IntegrationTests -c Release`.
 
 ## Language & framework
 
@@ -78,7 +102,11 @@ tests run in-process via `ServiceCollection`.
   no reflection hacks
 - Use `Record.Exception` (not `Assert.Throws<T>`) when asserting that no
   exception is thrown
-- Do not use `Thread.Sleep` or `Task.Delay` in tests
+- Do not use `Thread.Sleep` or `Task.Delay` in **unit** tests (integration tests
+  may poll the backend until telemetry is queryable)
+- Integration tests live in the `*.IntegrationTests` project, are marked
+  `[Trait("Category", "Integration")]` and assert against a live OpenObserve via
+  its `_search` API — see [Integration tests](#integration-tests)
 
 ## Versioning & release
 
@@ -88,13 +116,18 @@ tests run in-process via `ServiceCollection`.
 - Do not change `<Version>` without also creating `release-notes/v{VERSION}.md`
 - NuGet publish is **manual** (`workflow_dispatch`) — never triggered
   automatically
+- The full release-prep workflow (decide SemVer, bump, update deps, build/test,
+  end-to-end smoke test, release notes, PR to `master`) is encoded in the
+  **`prepare-release`** skill at `.claude/skills/prepare-release/`. Run it via
+  Claude Code (`/prepare-release`) when cutting a release; it only prepares the
+  PR — publishing stays the manual `deploy-nuget.yml` trigger.
 
 ## What NOT to do
 
 - Do not add `using` directives already covered by global/implicit usings
 - Do not add `// TODO` comments — raise an issue instead
-- Do not modify the `*.Sample` project for library behaviour changes (it is
-  excluded from code coverage)
+- Do not modify the `*.Sample.*` projects for library behaviour changes (they
+  are excluded from code coverage)
 - Do not add new public API surface without a corresponding test in
   `TelemetryOptionsTests.cs` or `TelemetryServiceCollectionExtensionsTests.cs`
 
@@ -105,7 +138,9 @@ tests run in-process via `ServiceCollection`.
 2. Wire it up in `TelemetryServiceCollectionExtensions` under the appropriate
    signal block
 3. Add default-value test in `TelemetryOptionsTests.cs`
-4. Add enabled/disabled integration tests in
+4. Add enabled/disabled unit tests in
    `TelemetryServiceCollectionExtensionsTests.cs`
 5. Add the option to the `<example>` block in the XML doc on `TelemetryOptions`
 6. Update `README.md` configuration reference table
+7. Run the unit tests; when the telemetry stack is running, run the integration
+   tests too (see [Integration tests](#integration-tests))

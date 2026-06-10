@@ -11,7 +11,11 @@
 # Exit 0 = telemetry confirmed, non-zero = failed.
 set -euo pipefail
 
-SAMPLE_DIR="src/OpenTelemetryExtension.Configuration.Sample"
+# Run from the repository root so the relative paths below resolve regardless
+# of where the script was invoked from.
+cd "$(git rev-parse --show-toplevel)"
+
+SAMPLE_DIR="src/OpenTelemetryExtension.Configuration.Sample.WebApi"
 SWAGGER_URL="http://localhost:5021"   # http app url from launchSettings
 
 # 1. Start OpenObserve via its Helm chart

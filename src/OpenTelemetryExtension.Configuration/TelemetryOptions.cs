@@ -15,18 +15,19 @@ using OpenTelemetry.Trace;
 /// <code>
 /// "Telemetry": {
 ///   "Endpoint":                        "http://localhost:4318",
-///   "Enabled":                         false,
+///   "Enabled":                         true,
 ///   "Headers":                         "",
 ///   "Protocol":                        "HttpProtobuf",
 ///   "ServiceName":                     null,
 ///   "ResourceAttributes":              { "deployment.environment": "production", "team": "backend" },
+///   "AdditionalTracingSources":        [ "Npgsql" ],
+///   "AdditionalMeters":                [ "MyApp.Orders" ],
 ///   "SampleRatio":                     1.0,
 ///   "EnableTracing":                   true,
 ///   "EnableMetrics":                   true,
 ///   "EnableLogging":                   true,
 ///   "EnableAspNetCoreInstrumentation": true,
 ///   "EnableHttpClientInstrumentation": true,
-///   "EnableSqlClientInstrumentation":  false,
 ///   "EnableRuntimeInstrumentation":    true,
 ///   "RecordExceptions":                true,
 ///   "ExcludedPaths":                   ["/health"],
@@ -43,9 +44,9 @@ public sealed class TelemetryOptions
     /// <summary>
     /// Whether telemetry is enabled at all.
     /// If <c>false</c>, no OpenTelemetry services are registered.
-    /// Default: <c>false</c> — explicit opt-in required.
+    /// Default: <c>true</c>.
     /// </summary>
-    public bool Enabled { get; set; } = false;
+    public bool Enabled { get; set; } = true;
 
     /// <summary>
     /// OTLP endpoint for logs, traces and metrics.
@@ -84,6 +85,23 @@ public sealed class TelemetryOptions
     public Dictionary<string, string> ResourceAttributes { get; set; } = [];
 
     /// <summary>
+    /// Additional <c>ActivitySource</c> names to collect traces from, registered via
+    /// <c>AddSource</c>. Use this to enable source-based instrumentation (e.g. database
+    /// drivers like <c>Npgsql</c>, <c>MySqlConnector</c>) or your own application sources
+    /// without writing code.
+    /// Example: <c>[ "Npgsql", "MyApp" ]</c>
+    /// Default: <c>[]</c>
+    /// </summary>
+    public string[] AdditionalTracingSources { get; set; } = [];
+
+    /// <summary>
+    /// Additional <c>Meter</c> names to collect metrics from, registered via <c>AddMeter</c>.
+    /// Example: <c>[ "MyApp.Orders" ]</c>
+    /// Default: <c>[]</c>
+    /// </summary>
+    public string[] AdditionalMeters { get; set; } = [];
+
+    /// <summary>
     /// Fraction of traces to sample. <c>1.0</c> samples everything, <c>0.1</c> samples 10%.
     /// Uses <c>ParentBased(TraceIdRatioBased)</c> sampler.
     /// Default: <c>1.0</c>
@@ -120,12 +138,6 @@ public sealed class TelemetryOptions
     /// Default: <c>true</c>
     /// </summary>
     public bool EnableHttpClientInstrumentation { get; set; } = true;
-
-    /// <summary>
-    /// Whether SQL database calls via <c>SqlClient</c> are instrumented.
-    /// Default: <c>false</c> — opt-in, as not all applications use SQL.
-    /// </summary>
-    public bool EnableSqlClientInstrumentation { get; set; } = false;
 
     /// <summary>
     /// Whether .NET runtime metrics (GC, memory, thread pool) are collected.

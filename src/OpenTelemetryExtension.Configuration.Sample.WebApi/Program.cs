@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
+using OpenTelemetry.Trace;
 
-namespace OpenTelemetryExtension.Configuration.Sample;
+namespace OpenTelemetryExtension.Configuration.Sample.WebApi;
 
 public class Program
 {
@@ -9,7 +10,16 @@ public class Program
         var builder = WebApplication.CreateBuilder(args);
 
         builder.Logging.ClearProviders();
-        builder.Services.AddTelemetry(builder.Configuration);
+
+        // EnableSqlClientInstrumentation is a custom key — SqlClient is optional and not part of TelemetryOptions.
+        builder.Services.AddTelemetry(builder.Configuration, o =>
+            o.ConfigureTracing = tracing =>
+            {
+                if (builder.Configuration.GetValue<bool>("Telemetry:EnableSqlClientInstrumentation"))
+                {
+                    tracing.AddSqlClientInstrumentation(sql => sql.RecordException = o.RecordExceptions);
+                }
+            });
 
         builder.Services.AddHealthChecks();
         builder.Services.AddAuthorization();
@@ -46,6 +56,7 @@ public class Program
                 logger.LogWarning("Get Weatherforecast endpoint called");
 
                 await Task.Delay(TimeSpan.FromSeconds(10));
+                logger.LogWarning("Demo response delay of 10 seconds completed");
 
                 var entities = await db.WeatherForecasts.ToListAsync();
                 return Results.Ok(entities);

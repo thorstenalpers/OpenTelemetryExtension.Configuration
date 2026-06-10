@@ -11,15 +11,39 @@ For anything beyond a small fix, please [open an issue](https://github.com/thors
 1. Fork the repository and create a branch from `develop`.
 2. Make your changes.
 3. Add or update tests — every public API change needs test coverage.
-4. Run the build and tests locally.
+4. When you add or change a feature, run the **unit tests**; if you have the
+   telemetry stack running, run the **integration tests** too (see
+   [Integration tests](#integration-tests)).
 5. Open a pull request against `develop`.
 
 ## Build & Test
 
 ```bash
 dotnet build OpenTelemetryExtension.slnx -c Release
-dotnet test  OpenTelemetryExtension.slnx -c Release
+dotnet test  src/OpenTelemetryExtension.Configuration.Tests -c Release   # unit tests
 ```
+
+### Integration tests
+
+The separate `OpenTelemetryExtension.Configuration.IntegrationTests` project
+verifies that telemetry is actually exported: it sends logs, metrics, traces and
+a SQL Server span through `AddTelemetry()` to a live **OpenObserve** instance and
+queries its API to confirm the data arrived.
+
+```bash
+# 1. Start the backends (local Kubernetes + Helm required)
+infrastructure/helm/helm-install-openobserve.cmd
+infrastructure/helm/helm-install-sqlserver.cmd   # only needed for the SQL Server test
+
+# 2. Run the integration tests
+dotnet test src/OpenTelemetryExtension.Configuration.IntegrationTests -c Release
+```
+
+The tests are tagged `[Trait("Category", "Integration")]` and **skip
+automatically** when OpenObserve (or SQL Server) is unreachable, so a normal
+`dotnet test` run never fails just because the stack is down. Endpoints and
+credentials default to the Helm chart values and can be overridden via the
+`OTEL_IT_*` environment variables. **CI runs the unit tests only.**
 
 ## Code Style
 
@@ -42,6 +66,8 @@ If your PR changes the public API or behaviour, please:
 2. Add a `release-notes/v{VERSION}.md` file describing what changed.
 
 PRs without a version bump are fine for documentation or refactoring that has no user-visible impact.
+
+> **Maintainers:** the release-prep steps (version decision, dependency updates, build/test, smoke test, release notes, release PR) are automated by the `prepare-release` Claude Code skill in [`.claude/skills/prepare-release/`](./.claude/skills/prepare-release/). It prepares the PR only — the actual NuGet publish remains the manual **Deploy Nuget** workflow.
 
 ## Adding a New Instrumentation Option
 

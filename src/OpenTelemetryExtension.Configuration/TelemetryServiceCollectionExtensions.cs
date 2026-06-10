@@ -4,7 +4,9 @@ using System;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Reflection;
+#if !NETSTANDARD2_0
 using Microsoft.AspNetCore.Http;
+#endif
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -20,7 +22,7 @@ using OpenTelemetry.Trace;
 /// <remarks>
 /// Two registration overloads are provided:
 /// <list type="bullet">
-///   <item><description><see cref="AddTelemetry(IServiceCollection, IConfiguration)"/> — binds from <c>appsettings.json</c>.</description></item>
+///   <item><description><see cref="AddTelemetry(IServiceCollection, IConfiguration, string)"/> — binds from <c>appsettings.json</c>.</description></item>
 ///   <item><description><see cref="AddTelemetry(IServiceCollection, Action{TelemetryOptions})"/> — configures inline in code.</description></item>
 /// </list>
 /// When <see cref="TelemetryOptions.Enabled"/> is <c>false</c> no OpenTelemetry
@@ -34,19 +36,23 @@ public static class TelemetryServiceCollectionExtensions
     /// </summary>
     /// <param name="services">The <see cref="IServiceCollection"/> to add services to.</param>
     /// <param name="configuration">
-    /// The application configuration. Must contain a <c>Telemetry</c> section
-    /// matching <see cref="TelemetryOptions"/>. See <see cref="TelemetryOptions.SectionName"/>.
+    /// The application configuration. Must contain a section matching
+    /// <see cref="TelemetryOptions"/>. See <see cref="TelemetryOptions.SectionName"/>.
+    /// </param>
+    /// <param name="sectionName">
+    /// The configuration section to bind. Defaults to
+    /// <see cref="TelemetryOptions.SectionName"/> (<c>Telemetry</c>) when <c>null</c> or empty.
     /// </param>
     /// <returns>The original <paramref name="services"/> for chaining.</returns>
     /// <exception cref="InvalidOperationException">
-    /// Thrown when the <c>Telemetry</c> configuration section is missing or empty.
+    /// Thrown when the configuration section is missing or empty.
     /// </exception>
     /// <exception cref="ValidationException">
     /// Thrown when the bound <see cref="TelemetryOptions"/> fail validation,
     /// e.g. when <see cref="TelemetryOptions.Endpoint"/> is <c>null</c>.
     /// </exception>
-    public static IServiceCollection AddTelemetry(this IServiceCollection services, IConfiguration configuration)
-        => services.AddTelemetry(configuration, configure: null);
+    public static IServiceCollection AddTelemetry(this IServiceCollection services, IConfiguration configuration, string? sectionName = null)
+        => services.AddTelemetry(configuration, configure: null, sectionName);
 
     /// <summary>
     /// Registers OpenTelemetry tracing, metrics and logging by binding the
@@ -64,9 +70,13 @@ public static class TelemetryServiceCollectionExtensions
     /// An optional delegate applied after binding, e.g. to register additional
     /// instrumentation via <see cref="TelemetryOptions.ConfigureTracing"/>.
     /// </param>
+    /// <param name="sectionName">
+    /// The configuration section to bind. Defaults to
+    /// <see cref="TelemetryOptions.SectionName"/> (<c>Telemetry</c>) when <c>null</c> or empty.
+    /// </param>
     /// <returns>The original <paramref name="services"/> for chaining.</returns>
     /// <exception cref="InvalidOperationException">
-    /// Thrown when the <c>Telemetry</c> configuration section is missing or empty.
+    /// Thrown when the configuration section is missing or empty.
     /// </exception>
     /// <exception cref="ValidationException">
     /// Thrown when the resulting <see cref="TelemetryOptions"/> fail validation,
@@ -80,12 +90,13 @@ public static class TelemetryServiceCollectionExtensions
     /// });
     /// </code>
     /// </example>
-    public static IServiceCollection AddTelemetry(this IServiceCollection services, IConfiguration configuration, Action<TelemetryOptions>? configure)
+    public static IServiceCollection AddTelemetry(this IServiceCollection services, IConfiguration configuration, Action<TelemetryOptions>? configure, string? sectionName = null)
     {
-        var section = configuration.GetSection(TelemetryOptions.SectionName);
+        var name = string.IsNullOrWhiteSpace(sectionName) ? TelemetryOptions.SectionName : sectionName!;
+        var section = configuration.GetSection(name);
         if (!section.Exists())
         {
-            throw new InvalidOperationException($"Configuration section '{TelemetryOptions.SectionName}' is missing.");
+            throw new InvalidOperationException($"Configuration section '{name}' is missing.");
         }
 
         var options = new TelemetryOptions();
@@ -168,6 +179,7 @@ public static class TelemetryServiceCollectionExtensions
             {
                 tracing.SetSampler(new ParentBasedSampler(new TraceIdRatioBasedSampler(options.SampleRatio)));
 
+#if !NETSTANDARD2_0
                 if (options.EnableAspNetCoreInstrumentation)
                 {
                     tracing.AddAspNetCoreInstrumentation(opt =>
@@ -179,15 +191,16 @@ public static class TelemetryServiceCollectionExtensions
                         }
                     });
                 }
+#endif
 
                 if (options.EnableHttpClientInstrumentation)
                 {
                     tracing.AddHttpClientInstrumentation(opt => opt.RecordException = options.RecordExceptions);
                 }
 
-                if (options.EnableSqlClientInstrumentation)
+                foreach (var source in options.AdditionalTracingSources)
                 {
-                    tracing.AddSqlClientInstrumentation(opt => opt.RecordException = options.RecordExceptions);
+                    tracing.AddSource(source);
                 }
 
                 options.ConfigureTracing?.Invoke(tracing);
@@ -207,10 +220,12 @@ public static class TelemetryServiceCollectionExtensions
         {
             builder.WithMetrics(metrics =>
             {
+#if !NETSTANDARD2_0
                 if (options.EnableAspNetCoreInstrumentation)
                 {
                     metrics.AddAspNetCoreInstrumentation();
                 }
+#endif
 
                 if (options.EnableHttpClientInstrumentation)
                 {
@@ -220,6 +235,11 @@ public static class TelemetryServiceCollectionExtensions
                 if (options.EnableRuntimeInstrumentation)
                 {
                     metrics.AddRuntimeInstrumentation();
+                }
+
+                foreach (var meter in options.AdditionalMeters)
+                {
+                    metrics.AddMeter(meter);
                 }
 
                 options.ConfigureMetrics?.Invoke(metrics);
@@ -259,6 +279,7 @@ public static class TelemetryServiceCollectionExtensions
         }
     }
 
+#if !NETSTANDARD2_0
     internal static bool ShouldInstrument(PathString path, string[] excludedPaths)
     {
         return !excludedPaths.Any(p => path.StartsWithSegments(p));
@@ -268,4 +289,5 @@ public static class TelemetryServiceCollectionExtensions
     {
         return ctx => ShouldInstrument(ctx.Request.Path, excludedPaths);
     }
+#endif
 }

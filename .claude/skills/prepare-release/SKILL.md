@@ -1,9 +1,9 @@
 ---
-name: auto-release
-description: Prepare a new NuGet release of this repository. Use when the user wants to cut/prepare a release, bump the package version, update dependencies for a release, or open a release PR to master. Decides the next SemVer version automatically and only releases when OpenTelemetry packages have updates.
+name: prepare-release
+description: Prepare a new NuGet release of this repository (version bump, release notes, release PR to master). Use this whenever the user mentions releasing, publishing, shipping, cutting a release, bumping the version, updating OpenTelemetry dependencies, or preparing release notes — even if they don't say "release" explicitly. Decides the next SemVer version automatically and proceeds when the shipped library project has dependency updates or there are any new commits since the last tag.
 ---
 
-# Auto-release
+# Prepare release
 
 Prepare a new release of this NuGet package. You decide the next version
 yourself. The NuGet publish itself is a **manual** GitHub Actions trigger
@@ -12,10 +12,11 @@ prepare the repository and open the PR.
 
 ## Workflow
 
-1. **Check for OpenTelemetry NuGet updates first**
-   - Run the helper: `bash scripts/check-otel-updates.sh`
-   - Exit code **3** = no OpenTelemetry updates → **stop and do not release**.
-   - Exit code **0** = updates available → continue.
+1. **Check whether there is anything to release**
+   - Run the helper: `bash .claude/skills/prepare-release/scripts/check-otel-updates.sh`
+   - The helper only inspects the **shipped library project** (`src/OpenTelemetryExtension.Configuration/...csproj`). Dependency updates in the Sample or Tests projects are ignored — they are never published and must not trigger a new version.
+   - Exit code **3** = nothing to release (no library dependency updates *and* no new commits since the last tag) → **stop**.
+   - Exit code **0** = library dependency updates and/or new commits exist → continue.
 
 2. **Determine current version & last tag**
    - Read `<Version>` in `src/OpenTelemetryExtension.Configuration/OpenTelemetryExtension.Configuration.csproj`.
@@ -29,18 +30,18 @@ prepare the repository and open the PR.
 
 5. **Branch** — `git checkout -b release/v<version>`.
 
-6. **Update all NuGet packages** to latest, then `dotnet restore OpenTelemetryExtension.slnx`.
+6. **Update the library project's NuGet packages** to latest (`src/OpenTelemetryExtension.Configuration/OpenTelemetryExtension.Configuration.csproj` only — leave Sample/Tests packages alone), then `dotnet restore OpenTelemetryExtension.slnx`.
 
 7. **Build & test (green required)**
    - `dotnet build OpenTelemetryExtension.slnx -c Release`
-   - `dotnet test OpenTelemetryExtension.slnx -c Release`
+   - `dotnet test OpenTelemetryExtension.slnx -c Release --filter "Category=Unit"` (unit tests only; integration tests need the live OpenObserve/SQL stack)
 
 8. **End-to-end smoke test** — prove telemetry actually reaches a backend.
    Requires a local Kubernetes cluster (k3s in WSL2) with Helm + kubectl.
    OpenObserve is used because it has a real query API, so the test can
    positively confirm ingested data. The helper starts OpenObserve via its Helm
    chart, runs the sample, generates traffic and queries the API for records:
-   - `bash scripts/smoke-test.sh`
+   - `bash .claude/skills/prepare-release/scripts/smoke-test.sh`
    - Exit 0 = telemetry confirmed → continue. Non-zero = stop and report; do not
      release if telemetry does not arrive.
 
@@ -48,7 +49,7 @@ prepare the repository and open the PR.
 
 10. **Extend docs** — update `README.md` etc. for the changes/new dep versions.
 
-11. **Release notes** — copy `templates/release-notes.md` to
+11. **Release notes** — copy `.claude/skills/prepare-release/assets/release-notes.md` to
     `release-notes/v<version>.md`, fill in the `{{VERSION}}`/`{{DATE}}` placeholders
     and the **Added / Changed / Fixed / Removed** sections (omit empty ones).
 
