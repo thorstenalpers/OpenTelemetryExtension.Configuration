@@ -17,16 +17,18 @@ jobs:
     env:
       Solution_Name: "OpenTelemetryExtension.slnx"
       Nuget_Project_Path: "src/OpenTelemetryExtension.Configuration/OpenTelemetryExtension.Configuration.csproj"
-      Test_Project_Path: "src/OpenTelemetryExtension.Configuration.Tests/OpenTelemetryExtension.Configuration.Tests.csproj"       
+      Test_Project_Path: "src/OpenTelemetryExtension.Configuration.Tests/OpenTelemetryExtension.Configuration.Tests.csproj"
+      # Run remaining Node 20 JavaScript actions (e.g. action-gh-release) on Node 24.
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
 
     steps:
     - name: Checkout
-      uses: actions/checkout@v4
+      uses: actions/checkout@v5
       with:
         fetch-depth: 0
 
     - name: Install .NET
-      uses: actions/setup-dotnet@v4
+      uses: actions/setup-dotnet@v5
       with:
         dotnet-version: 10.x
 
