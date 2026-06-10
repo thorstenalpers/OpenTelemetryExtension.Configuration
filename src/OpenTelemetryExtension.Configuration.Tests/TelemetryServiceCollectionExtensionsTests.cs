@@ -10,9 +10,7 @@ public class TelemetryServiceCollectionExtensionsTests
 
     private static IServiceCollection NewServices() => new ServiceCollection();
 
-    // Forces the lazy OpenTelemetry configuration lambdas (resource builder,
-    // exporters, instrumentation) to actually execute by resolving the signal
-    // providers from the built container.
+    // Resolves signal providers to force lazy OTel builder lambdas to execute.
     private static void BuildAndResolveProviders(IServiceCollection services)
     {
         var provider = services.BuildServiceProvider();
@@ -90,8 +88,6 @@ public class TelemetryServiceCollectionExtensionsTests
     [Fact]
     public void AddTelemetry_IConfiguration_MapsAllScalarProperties()
     {
-        // Verify that the IConfiguration overload forwards all options to the Action overload
-        // by checking that registration succeeds with every supported appsettings key.
         var config = ValidConfig(new Dictionary<string, string?>
         {
             ["Telemetry:Enabled"] = "true",
@@ -104,7 +100,6 @@ public class TelemetryServiceCollectionExtensionsTests
             ["Telemetry:EnableLogging"] = "true",
             ["Telemetry:EnableAspNetCoreInstrumentation"] = "true",
             ["Telemetry:EnableHttpClientInstrumentation"] = "false",
-            ["Telemetry:EnableSqlClientInstrumentation"] = "false",
             ["Telemetry:EnableRuntimeInstrumentation"] = "true",
             ["Telemetry:RecordExceptions"] = "false",
             ["Telemetry:ExcludedPaths:0"] = "/health",
@@ -129,7 +124,6 @@ public class TelemetryServiceCollectionExtensionsTests
         var services = NewServices();
         services.AddTelemetry(config);
 
-        // When disabled, no OpenTelemetry SDK service (TracerProvider) should be registered.
         var provider = services.BuildServiceProvider();
         var tracer = provider.GetService<TracerProvider>();
         Assert.Null(tracer);
@@ -150,7 +144,7 @@ public class TelemetryServiceCollectionExtensionsTests
     {
         var services = NewServices();
         Assert.Throws<ValidationException>(() =>
-            services.AddTelemetry(o => { /* Endpoint left null */ }));
+            services.AddTelemetry(o => { }));
     }
 
     [Fact]
@@ -232,7 +226,6 @@ public class TelemetryServiceCollectionExtensionsTests
         {
             o.EnableAspNetCoreInstrumentation = false;
             o.EnableHttpClientInstrumentation = false;
-            o.EnableSqlClientInstrumentation = false;
             o.EnableRuntimeInstrumentation = false;
         }));
 
@@ -249,7 +242,6 @@ public class TelemetryServiceCollectionExtensionsTests
         {
             o.EnableAspNetCoreInstrumentation = true;
             o.EnableHttpClientInstrumentation = true;
-            o.EnableSqlClientInstrumentation = true;
             o.EnableRuntimeInstrumentation = true;
             o.RecordExceptions = true;
             o.ExcludedPaths = ["/health"];
@@ -478,6 +470,40 @@ public class TelemetryServiceCollectionExtensionsTests
         Assert.Null(ex);
     }
 
+    // ── Additional sources & meters ───────────────────────────────────────
+
+    [Fact]
+    public void AddTelemetry_AdditionalTracingSourcesAndMeters_DoesNotThrow()
+    {
+        var services = NewServices();
+        services.AddTelemetry(MinimalConfigure(o =>
+        {
+            o.AdditionalTracingSources = ["Npgsql", "MyApp"];
+            o.AdditionalMeters = ["MyApp.Orders"];
+        }));
+
+        var ex = Record.Exception(() => BuildAndResolveProviders(services));
+
+        Assert.Null(ex);
+    }
+
+    [Fact]
+    public void AddTelemetry_IConfiguration_BindsAdditionalSourcesAndMeters()
+    {
+        var config = BuildConfig(new Dictionary<string, string?>
+        {
+            ["Telemetry:Enabled"] = "true",
+            ["Telemetry:Endpoint"] = "http://localhost:4318",
+            ["Telemetry:AdditionalTracingSources:0"] = "Npgsql",
+            ["Telemetry:AdditionalMeters:0"] = "MyApp.Orders",
+        });
+        var services = NewServices();
+
+        var ex = Record.Exception(() => services.AddTelemetry(config));
+
+        Assert.Null(ex);
+    }
+
     // ── IConfiguration + code callback (combined) ─────────────────────────
 
     [Fact]
@@ -513,7 +539,6 @@ public class TelemetryServiceCollectionExtensionsTests
     [Fact]
     public void AddTelemetry_IConfigurationWithConfigure_CodeOnlyOptionAppliedOnTopOfConfig()
     {
-        // Endpoint comes from config (JSON), ConfigureMetrics comes from code.
         var invoked = false;
         var config = ValidConfig(new Dictionary<string, string?> { ["Telemetry:Enabled"] = "true" });
         var services = NewServices();

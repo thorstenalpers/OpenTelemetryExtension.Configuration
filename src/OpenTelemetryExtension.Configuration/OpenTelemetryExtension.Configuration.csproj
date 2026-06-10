@@ -2,7 +2,7 @@
 
 	<PropertyGroup>
 		<TargetFrameworks>netstandard2.0;net10.0</TargetFrameworks>
-		<Version>1.1.1</Version>
+		<Version>2.0.0</Version>
 		<GeneratePackageOnBuild>false</GeneratePackageOnBuild>
 		<GenerateDocumentationFile>true</GenerateDocumentationFile>
 
@@ -10,7 +10,7 @@
 		<Authors>Thorsten Alpers</Authors>
 		<Copyright>Copyright © $([System.DateTime]::Now.Year) Thorsten Alpers</Copyright>
 		<Description>Configurable OpenTelemetry setup for .NET applications providing tracing, metrics, and logging via OTLP, configurable through code or appsettings.json.</Description>
-		<PackageTags>OpenTelemetry;Otel;Tracing;Traces;Metrics;Logs;Logging;OTLP;ASP.NET Core;appsettings;Configuration;Instrumentation;Telemetry;HttpClient;SqlClient;gRPC</PackageTags>
+		<PackageTags>OpenTelemetry;Otel;Tracing;Traces;Metrics;Logs;Logging;OTLP;ASP.NET Core;WPF;WinForms;Console;UWP;MAUI;appsettings;Configuration;Instrumentation;Telemetry;HttpClient;SqlClient;gRPC</PackageTags>
 		<PackageProjectUrl>https://github.com/thorstenalpers/OpenTelemetryExtension.Configuration</PackageProjectUrl>
 		<RepositoryUrl>https://github.com/thorstenalpers/OpenTelemetryExtension.Configuration</RepositoryUrl>
 		<RepositoryType>git</RepositoryType>
@@ -24,13 +24,18 @@
 		<InternalsVisibleTo Include="OpenTelemetryExtension.Configuration.Tests" />
 	</ItemGroup>
 
+	<!-- Cross-platform packages: usable from any .NET app (ASP.NET Core, WPF, console, ...). -->
 	<ItemGroup>
 		<PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.15.3" />
 		<PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.15.3" />
-		<PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.15.2" />
 		<PackageReference Include="OpenTelemetry.Instrumentation.Http" Version="1.15.1" />
 		<PackageReference Include="OpenTelemetry.Instrumentation.Runtime" Version="1.15.1" />
-		<PackageReference Include="OpenTelemetry.Instrumentation.SqlClient" Version="1.15.2" />
+	</ItemGroup>
+
+	<!-- ASP.NET Core instrumentation is only pulled in for web-capable targets,
+	     so non-web clients (WPF, console) using the netstandard2.0 build stay lean. -->
+	<ItemGroup Condition="'$(TargetFramework)' != 'netstandard2.0'">
+		<PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.15.2" />
 	</ItemGroup>
 
 	<ItemGroup>

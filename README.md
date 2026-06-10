@@ -14,14 +14,22 @@ Configurable OpenTelemetry setup for .NET applications providing **tracing, metr
 
 - **One-call setup** — tracing, metrics and logging via a single `AddTelemetry()`, configured from `appsettings.json` or code
 - **All three signals over OTLP** — HTTP/protobuf or gRPC, to any OTLP-compatible backend
-- **Built-in instrumentation** — ASP.NET Core, `HttpClient`, SQL Client and .NET runtime metrics, each toggleable
-- **Sensible defaults** — sampling, health-check path exclusion and exception recording work out of the box
+- **Built-in instrumentation** — `HttpClient`, SQL Client and .NET runtime metrics everywhere; ASP.NET Core instrumentation on web targets — each toggleable
+- **Sensible defaults** — configurable sampling, health-check path exclusion and exception recording work out of the box
 - **Startup validation** — misconfiguration fails fast with a clear error
 - **Extensible** — `ConfigureTracing`/`ConfigureMetrics`/`ConfigureLogging` hooks for custom sources, meters and providers
-- **Broad target support** — `netstandard2.0` and `net10.0`
+- **Works on any .NET** — ASP.NET Core, WPF, console and more; the `netstandard2.0` build pulls **no** ASP.NET Core dependencies
 
 ---
 
+
+## ✅ Requirements
+
+- A .NET target compatible with **`netstandard2.0`** — i.e. .NET Framework 4.6.1+, .NET 6/8/9/10, or .NET 10 directly.
+- An **OTLP-compatible backend** to receive the telemetry (collector, Jaeger, OpenObserve, the .NET Aspire Dashboard, …). See [Running Locally with a Backend](#-running-locally-with-a-backend).
+- ASP.NET Core instrumentation requires a **web target** (`net10.0` build); it is not included in the `netstandard2.0` build used by WPF/console apps.
+
+---
 
 ## 📦 Installation
 
@@ -50,8 +58,10 @@ builder.Services.AddTelemetry(builder.Configuration);
 }
 ```
 
-That's it — tracing, metrics and logging are exported via OTLP. Telemetry is
-enabled by default; set `"Enabled": false` to turn it off.
+That's it — tracing, metrics and logging are exported via OTLP.
+
+> You need an **OTLP-compatible backend** listening at `Endpoint`. No backend yet?
+> See [Running Locally with a Backend](#-running-locally-with-a-backend) for one-command setups.
 
 ---
 
@@ -67,13 +77,14 @@ All options live under the `Telemetry` key in `appsettings.json`.
 | `Protocol` | `string` | `HttpProtobuf` | `HttpProtobuf` (port 4318) or `Grpc` (port 4317). |
 | `ServiceName` | `string?` | `null` | Service name shown in the backend. |
 | `ResourceAttributes` | `object` | `{}` | Extra resource attributes, e.g. `{ "deployment.environment": "production", "team": "backend" }`. |
+| `AdditionalTracingSources` | `string[]` | `[]` | Extra `ActivitySource` names to collect (e.g. `"Npgsql"`, your own app sources) — registered via `AddSource`. |
+| `AdditionalMeters` | `string[]` | `[]` | Extra `Meter` names to collect (e.g. `"MyApp.Orders"`) — registered via `AddMeter`. |
 | `SampleRatio` | `double` | `1.0` | Fraction of traces to sample. `0.1` = 10%, `1.0` = all. |
 | `EnableTracing` | `bool` | `true` | Enables distributed tracing. |
 | `EnableMetrics` | `bool` | `true` | Enables metrics collection. |
 | `EnableLogging` | `bool` | `true` | Enables log export via OTLP. |
 | `EnableAspNetCoreInstrumentation` | `bool` | `true` | Instruments incoming HTTP requests. |
 | `EnableHttpClientInstrumentation` | `bool` | `true` | Instruments outgoing `HttpClient` requests. |
-| `EnableSqlClientInstrumentation` | `bool` | `false` | Instruments SQL calls. Opt-in — not all apps use SQL. |
 | `EnableRuntimeInstrumentation` | `bool` | `true` | Collects GC, memory and thread pool metrics. |
 | `RecordExceptions` | `bool` | `true` | Records exception stack traces on spans. |
 | `ExcludedPaths` | `string[]` | `["/health"]` | Paths excluded from tracing. |
@@ -187,9 +198,130 @@ o.ConfigureTracing = tracing => tracing.AddSource("MyApp");
 > gave the `Meter`/`ActivitySource` — that name is how OpenTelemetry routes the
 > data.
 
+### Databases
+
+Database instrumentation is **not** built in — it depends entirely on your
+driver, so it is added through the `ConfigureTracing` hook. This keeps the
+package free of database-specific dependencies; you only pull in what you use.
+
+```csharp
+// SQL Server — install the package, then register it:
+//   dotnet add package OpenTelemetry.Instrumentation.SqlClient
+o.ConfigureTracing = t => t.AddSqlClientInstrumentation();
+
+// EF Core — dedicated instrumentation package:
+//   dotnet add package OpenTelemetry.Instrumentation.EntityFrameworkCore
+o.ConfigureTracing = t => t.AddEntityFrameworkCoreInstrumentation();
+
+// Drivers with a built-in ActivitySource — just register its name:
+o.ConfigureTracing = t => t.AddSource("Npgsql");          // PostgreSQL (Npgsql)
+o.ConfigureTracing = t => t.AddSource("MySqlConnector");  // MySQL (MySqlConnector)
+```
+
+Oracle (`Oracle.ManagedDataAccess.Core`) emits an `ActivitySource` in recent
+versions and is wired up the same way via `AddSource(...)`.
+
+**No code for source-based drivers:** if the driver only needs an `ActivitySource`
+name (Npgsql, MySqlConnector, Oracle, your own app sources), you can enable it
+purely from `appsettings.json` — no `ConfigureTracing` call required:
+
+```json
+{
+  "Telemetry": {
+    "Endpoint": "http://localhost:4318",
+    "AdditionalTracingSources": [ "Npgsql", "MyApp" ],
+    "AdditionalMeters": [ "MyApp.Orders" ]
+  }
+}
+```
+
+> Package-based instrumentation (SQL Server, EF Core) still needs the one-line
+> `ConfigureTracing` call above, because it requires its NuGet package — a config
+> string alone can't pull in a dependency.
+
+**Toggling SQL instrumentation from `appsettings.json`**
+
+Because `EnableSqlClientInstrumentation` is not part of `TelemetryOptions` (the
+package is optional), you can add it as a custom key and read it in the callback:
+
+`appsettings.json`:
+
+```json
+{
+  "Telemetry": {
+    "Endpoint": "http://localhost:4318",
+    "ServiceName": "my-api",
+    "EnableSqlClientInstrumentation": true
+  }
+}
+```
+
+`Program.cs`:
+
+```csharp
+builder.Services.AddTelemetry(builder.Configuration, opt =>
+    opt.ConfigureTracing = tracing =>
+    {
+        if (builder.Configuration.GetValue<bool>("Telemetry:EnableSqlClientInstrumentation"))
+        {
+            // Microsoft SQL Server / System.Data.SqlClient
+            // NuGet: OpenTelemetry.Instrumentation.SqlClient
+            tracing.AddSqlClientInstrumentation(sql =>
+                sql.RecordException = opt.RecordExceptions);
+
+            // PostgreSQL (Npgsql)
+            // NuGet: OpenTelemetry.Instrumentation.Npgsql
+            tracing.AddNpgsql();
+
+            // MySQL (MySqlConnector)
+            // NuGet: OpenTelemetry.Instrumentation.MySqlData
+            tracing.AddMySqlDataInstrumentation();
+        }
+    });
+```
+
+This keeps the on/off switch in config while the package dependency stays explicit in code.
+
 ---
 
-## 📋 Full configuration reference
+## 🖥️ Using outside the Generic Host
+
+`AddTelemetry()` works with **any** `IServiceCollection` — ASP.NET Core, WPF,
+WinForms, console, MAUI/WinUI, UWP, worker services, etc.
+
+**With the Generic Host** (recommended for desktop/console — `Host.CreateApplicationBuilder()`),
+the providers start and flush automatically:
+
+```csharp
+var builder = Host.CreateApplicationBuilder(args);
+builder.Services.AddTelemetry(builder.Configuration);
+using var host = builder.Build();
+await host.RunAsync();   // telemetry starts here and flushes on shutdown
+```
+
+**Without a host** (e.g. a bare `ServiceCollection` in UWP or a minimal app),
+build the provider and **dispose it on exit** so buffered telemetry is flushed:
+
+```csharp
+var services = new ServiceCollection();
+services.AddTelemetry(o =>
+{
+    o.Endpoint    = new Uri("http://localhost:4318");
+    o.ServiceName = "my-desktop-app";
+});
+
+var provider = services.BuildServiceProvider();
+// ... app runs ...
+provider.Dispose();      // flushes traces, metrics and logs
+```
+
+> ASP.NET Core instrumentation is only in the `net10.0` build. On the
+> `netstandard2.0` build (WPF/WinForms/console/UWP) it is simply absent —
+> setting `EnableAspNetCoreInstrumentation` there is a harmless no-op.
+
+---
+
+## 📋 Full Configuration Reference
 
 Every key with its **default** value (only `Endpoint` is required to get started — telemetry is enabled by default):
 
@@ -202,13 +334,14 @@ Every key with its **default** value (only `Endpoint` is required to get started
     "Protocol": "HttpProtobuf",                // "HttpProtobuf" (4318) or "Grpc" (4317)
     "ServiceName": null,                        // service name shown in the backend
     "ResourceAttributes": {},                   // extra attributes, e.g. { "deployment.environment": "production" }
+    "AdditionalTracingSources": [],             // extra ActivitySource names, e.g. [ "Npgsql", "MyApp" ]
+    "AdditionalMeters": [],                     // extra Meter names, e.g. [ "MyApp.Orders" ]
     "SampleRatio": 1.0,                         // 0.1 = 10% of traces, 1.0 = all
     "EnableTracing": true,                      // distributed tracing
     "EnableMetrics": true,                      // metrics collection
     "EnableLogging": true,                      // log export via OTLP
     "EnableAspNetCoreInstrumentation": true,    // incoming HTTP requests
     "EnableHttpClientInstrumentation": true,    // outgoing HttpClient requests
-    "EnableSqlClientInstrumentation": false,    // SQL calls (opt-in)
     "EnableRuntimeInstrumentation": true,       // GC, memory, thread pool metrics
     "RecordExceptions": true,                   // exception stack traces on spans
     "ExcludedPaths": [ "/health" ],             // paths excluded from tracing
@@ -222,8 +355,9 @@ Every key with its **default** value (only `Endpoint` is required to get started
 
 ## 🔌 Running Locally with a Backend
 
-The [sample project](./src/OpenTelemetryExtension.Configuration.Sample) ships a
-ready-to-run configuration for every supported backend. Each backend has:
+The [sample project](./src/OpenTelemetryExtension.Configuration.Sample) ships
+ready-to-run configurations for several popular backends (the three below are
+documented in full; more start scripts live in [`infrastructure/`](./infrastructure)). Each backend has:
 
 1. an **infrastructure start script** (Docker Compose or Helm) in [`infrastructure/`](./infrastructure),
 2. a **launch profile** that selects the matching `appsettings.<env>.json`,
@@ -258,7 +392,7 @@ ready-to-run configuration for every supported backend. Each backend has:
 
 ---
 
-## ⚙️ Backend Configurations
+## 📝 Sample Backend Configurations
 
 These are the exact `appsettings.<env>.json` files used by the sample's launch profiles.
 

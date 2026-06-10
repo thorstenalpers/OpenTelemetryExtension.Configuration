@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using OpenTelemetry.Trace;
 
 namespace OpenTelemetryExtension.Configuration.Sample;
 
@@ -9,7 +10,16 @@ public class Program
         var builder = WebApplication.CreateBuilder(args);
 
         builder.Logging.ClearProviders();
-        builder.Services.AddTelemetry(builder.Configuration);
+
+        // EnableSqlClientInstrumentation is a custom key — SqlClient is optional and not part of TelemetryOptions.
+        builder.Services.AddTelemetry(builder.Configuration, o =>
+            o.ConfigureTracing = tracing =>
+            {
+                if (builder.Configuration.GetValue<bool>("Telemetry:EnableSqlClientInstrumentation"))
+                {
+                    tracing.AddSqlClientInstrumentation(sql => sql.RecordException = o.RecordExceptions);
+                }
+            });
 
         builder.Services.AddHealthChecks();
         builder.Services.AddAuthorization();

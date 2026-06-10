@@ -51,10 +51,6 @@ public class TelemetryOptionsTests
         => Assert.True(new TelemetryOptions().EnableHttpClientInstrumentation);
 
     [Fact]
-    public void Defaults_EnableSqlClientInstrumentation_IsFalse()
-        => Assert.False(new TelemetryOptions().EnableSqlClientInstrumentation);
-
-    [Fact]
     public void Defaults_EnableRuntimeInstrumentation_IsTrue()
         => Assert.True(new TelemetryOptions().EnableRuntimeInstrumentation);
 
@@ -73,6 +69,14 @@ public class TelemetryOptionsTests
     [Fact]
     public void Defaults_ExcludedPaths_ContainsHealth()
         => Assert.Equal(["/health"], new TelemetryOptions().ExcludedPaths);
+
+    [Fact]
+    public void Defaults_AdditionalTracingSources_IsEmpty()
+        => Assert.Empty(new TelemetryOptions().AdditionalTracingSources);
+
+    [Fact]
+    public void Defaults_AdditionalMeters_IsEmpty()
+        => Assert.Empty(new TelemetryOptions().AdditionalMeters);
 
     [Fact]
     public void Defaults_IncludeScopes_IsTrue()
@@ -162,7 +166,6 @@ public class TelemetryOptionsTests
     public void Validation_Passes_WhenEndpointIsSet()
     {
         var o = new TelemetryOptions { Endpoint = new Uri("http://localhost:4318") };
-        // Should not throw
         Validator.ValidateObject(o, new ValidationContext(o), validateAllProperties: true);
     }
 

@@ -4,7 +4,9 @@ using System;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Reflection;
+#if !NETSTANDARD2_0
 using Microsoft.AspNetCore.Http;
+#endif
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -177,6 +179,7 @@ public static class TelemetryServiceCollectionExtensions
             {
                 tracing.SetSampler(new ParentBasedSampler(new TraceIdRatioBasedSampler(options.SampleRatio)));
 
+#if !NETSTANDARD2_0
                 if (options.EnableAspNetCoreInstrumentation)
                 {
                     tracing.AddAspNetCoreInstrumentation(opt =>
@@ -188,15 +191,16 @@ public static class TelemetryServiceCollectionExtensions
                         }
                     });
                 }
+#endif
 
                 if (options.EnableHttpClientInstrumentation)
                 {
                     tracing.AddHttpClientInstrumentation(opt => opt.RecordException = options.RecordExceptions);
                 }
 
-                if (options.EnableSqlClientInstrumentation)
+                foreach (var source in options.AdditionalTracingSources)
                 {
-                    tracing.AddSqlClientInstrumentation(opt => opt.RecordException = options.RecordExceptions);
+                    tracing.AddSource(source);
                 }
 
                 options.ConfigureTracing?.Invoke(tracing);
@@ -216,10 +220,12 @@ public static class TelemetryServiceCollectionExtensions
         {
             builder.WithMetrics(metrics =>
             {
+#if !NETSTANDARD2_0
                 if (options.EnableAspNetCoreInstrumentation)
                 {
                     metrics.AddAspNetCoreInstrumentation();
                 }
+#endif
 
                 if (options.EnableHttpClientInstrumentation)
                 {
@@ -229,6 +235,11 @@ public static class TelemetryServiceCollectionExtensions
                 if (options.EnableRuntimeInstrumentation)
                 {
                     metrics.AddRuntimeInstrumentation();
+                }
+
+                foreach (var meter in options.AdditionalMeters)
+                {
+                    metrics.AddMeter(meter);
                 }
 
                 options.ConfigureMetrics?.Invoke(metrics);
@@ -268,6 +279,7 @@ public static class TelemetryServiceCollectionExtensions
         }
     }
 
+#if !NETSTANDARD2_0
     internal static bool ShouldInstrument(PathString path, string[] excludedPaths)
     {
         return !excludedPaths.Any(p => path.StartsWithSegments(p));
@@ -277,4 +289,5 @@ public static class TelemetryServiceCollectionExtensions
     {
         return ctx => ShouldInstrument(ctx.Request.Path, excludedPaths);
     }
+#endif
 }
