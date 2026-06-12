@@ -25,9 +25,9 @@ Configurable OpenTelemetry setup for .NET applications providing **tracing, metr
 
 ## ✅ Requirements
 
-- A .NET target compatible with **`netstandard2.0`** — i.e. .NET Framework 4.6.1+, .NET 6/8/9/10, or .NET 10 directly.
+- A .NET target compatible with **`netstandard2.0`** — i.e. .NET Framework 4.6.1+, .NET 6/8/9/10, or directly the **`net8.0`** / **`net10.0`** builds.
 - An **OTLP-compatible backend** to receive the telemetry (collector, Jaeger, OpenObserve, the .NET Aspire Dashboard, …). See [Running Locally with a Backend](#-running-locally-with-a-backend).
-- ASP.NET Core instrumentation requires a **web target** (`net10.0` build); it is not included in the `netstandard2.0` build used by WPF/console apps.
+- ASP.NET Core instrumentation requires a modern .NET target (**`net8.0`** or **`net10.0`** build); it is not included in the `netstandard2.0` build used by WPF/console apps.
 
 ---
 

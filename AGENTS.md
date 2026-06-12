@@ -13,7 +13,7 @@ NuGet package that wires up OpenTelemetry (tracing, metrics, logging) for
 ```
 src/
   Directory.Build.props                            # Shared props: nullable, implicit usings, warnings-as-errors, style enforced in build
-  OpenTelemetryExtension.Configuration/             # Library (netstandard2.0 + net10.0) — the shipped NuGet package
+  OpenTelemetryExtension.Configuration/             # Library (netstandard2.0 + net8.0 + net10.0) — the shipped NuGet package
   OpenTelemetryExtension.Configuration.Tests/       # xUnit unit tests (net10.0, in-process, Category=Unit)
   OpenTelemetryExtension.Configuration.IntegrationTests/  # Integration tests (net10.0, Category=Integration) — query a live OpenObserve
   OpenTelemetryExtension.Configuration.Sample.WebApi/  # ASP.NET Core sample app (net10.0)
@@ -125,9 +125,12 @@ API to confirm the data was ingested.
 
 - C# with nullable reference types enabled — never use `!` to suppress
   nullability without a comment explaining why
-- Target frameworks: `netstandard2.0` and `net10.0` — guard net5.0+ APIs with
-  `#if NET5_0_OR_GREATER`. Do not use APIs unavailable on `netstandard2.0`
-  without the guard.
+- Target frameworks: `netstandard2.0`, `net8.0` and `net10.0` — guard net5.0+
+  APIs with `#if NET5_0_OR_GREATER` (or `#if !NETSTANDARD2_0`). Do not use APIs
+  unavailable on `netstandard2.0` without the guard. The ASP.NET Core
+  instrumentation is referenced for every target except `netstandard2.0`, so
+  `net8.0` and `net10.0` consumers get it; `netstandard2.0` (WPF/console) stays
+  lean.
 - `src/Directory.Build.props` applies to every project: `Nullable`,
   `ImplicitUsings`, `LangVersion=latest`, `TreatWarningsAsErrors=true`,
   `EnforceCodeStyleInBuild=true` — a style violation fails the build
