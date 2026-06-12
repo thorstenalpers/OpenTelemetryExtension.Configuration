@@ -1,8 +1,4 @@
-namespace OpenTelemetryExtension.Configuration;
-
-using System;
 using System.ComponentModel.DataAnnotations;
-using System.Linq;
 using System.Reflection;
 #if !NETSTANDARD2_0
 using Microsoft.AspNetCore.Http;
@@ -15,6 +11,8 @@ using OpenTelemetry.Logs;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
+
+namespace OpenTelemetryExtension.Configuration;
 
 /// <summary>
 /// Extension methods for registering OpenTelemetry services on <see cref="IServiceCollection"/>.
@@ -92,6 +90,7 @@ public static class TelemetryServiceCollectionExtensions
     /// </example>
     public static IServiceCollection AddTelemetry(this IServiceCollection services, IConfiguration configuration, Action<TelemetryOptions>? configure, string? sectionName = null)
     {
+        // ! is safe: netstandard2.0's IsNullOrWhiteSpace lacks the [NotNullWhen] annotation
         var name = string.IsNullOrWhiteSpace(sectionName) ? TelemetryOptions.SectionName : sectionName!;
         var section = configuration.GetSection(name);
         if (!section.Exists())
@@ -140,6 +139,11 @@ public static class TelemetryServiceCollectionExtensions
     /// </example>
     public static IServiceCollection AddTelemetry(this IServiceCollection services, Action<TelemetryOptions> configure)
     {
+        if (configure is null)
+        {
+            throw new ArgumentNullException(nameof(configure));
+        }
+
         var options = new TelemetryOptions();
         configure(options);
 
@@ -156,14 +160,14 @@ public static class TelemetryServiceCollectionExtensions
             return;
         }
 
-        var endpoint = options.Endpoint!;
-        var serviceVersion = Assembly.GetExecutingAssembly().GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
+        var serviceVersion = Assembly.GetEntryAssembly()?.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion;
 
         var builder = services.AddOpenTelemetry()
             .ConfigureResource(resource =>
             {
                 if (!string.IsNullOrWhiteSpace(options.ServiceName))
                 {
+                    // ! is safe: netstandard2.0's IsNullOrWhiteSpace lacks the [NotNullWhen] annotation
                     resource.AddService(serviceName: options.ServiceName!, serviceVersion: serviceVersion);
                 }
 
@@ -205,14 +209,7 @@ public static class TelemetryServiceCollectionExtensions
 
                 options.ConfigureTracing?.Invoke(tracing);
 
-                tracing.AddOtlpExporter(exp =>
-                {
-#pragma warning disable CS0618 // OtlpExportProtocol.Grpc is intentionally supported; warning only applies to netstandard2.0 without HttpClientFactory
-                    exp.Endpoint = options.Protocol == OtlpExportProtocol.Grpc ? endpoint : new Uri($"{endpoint}/v1/traces");
-#pragma warning restore CS0618
-                    exp.Protocol = options.Protocol;
-                    exp.Headers = options.Headers;
-                });
+                tracing.AddOtlpExporter(exp => ConfigureOtlpExporter(exp, options, "v1/traces"));
             });
         }
 
@@ -244,14 +241,7 @@ public static class TelemetryServiceCollectionExtensions
 
                 options.ConfigureMetrics?.Invoke(metrics);
 
-                metrics.AddOtlpExporter(exp =>
-                {
-#pragma warning disable CS0618 // OtlpExportProtocol.Grpc is intentionally supported; warning only applies to netstandard2.0 without HttpClientFactory
-                    exp.Endpoint = options.Protocol == OtlpExportProtocol.Grpc ? endpoint : new Uri($"{endpoint}/v1/metrics");
-#pragma warning restore CS0618
-                    exp.Protocol = options.Protocol;
-                    exp.Headers = options.Headers;
-                });
+                metrics.AddOtlpExporter(exp => ConfigureOtlpExporter(exp, options, "v1/metrics"));
             });
         }
 
@@ -266,18 +256,26 @@ public static class TelemetryServiceCollectionExtensions
                     otel.IncludeScopes = options.IncludeScopes;
                     otel.IncludeFormattedMessage = options.IncludeFormattedMessage;
 
-                    otel.AddOtlpExporter(exp =>
-                    {
-#pragma warning disable CS0618 // OtlpExportProtocol.Grpc is intentionally supported; warning only applies to netstandard2.0 without HttpClientFactory
-                        exp.Endpoint = options.Protocol == OtlpExportProtocol.Grpc ? endpoint : new Uri($"{endpoint}/v1/logs");
-#pragma warning restore CS0618
-                        exp.Protocol = options.Protocol;
-                        exp.Headers = options.Headers;
-                    });
+                    otel.AddOtlpExporter(exp => ConfigureOtlpExporter(exp, options, "v1/logs"));
                 });
             });
         }
     }
+
+    private static void ConfigureOtlpExporter(OtlpExporterOptions exporter, TelemetryOptions options, string signalPath)
+    {
+        // ! is safe: Endpoint is [Required]-validated before ConfigureTelemetry runs
+#pragma warning disable CS0618 // OtlpExportProtocol.Grpc is intentionally supported; warning only applies to netstandard2.0 without HttpClientFactory
+        exporter.Endpoint = options.Protocol == OtlpExportProtocol.Grpc
+            ? options.Endpoint!
+            : BuildSignalEndpoint(options.Endpoint!, signalPath);
+#pragma warning restore CS0618
+        exporter.Protocol = options.Protocol;
+        exporter.Headers = options.Headers;
+    }
+
+    internal static Uri BuildSignalEndpoint(Uri endpoint, string signalPath)
+        => new($"{endpoint.ToString().TrimEnd('/')}/{signalPath}");
 
 #if !NETSTANDARD2_0
     internal static bool ShouldInstrument(PathString path, string[] excludedPaths)

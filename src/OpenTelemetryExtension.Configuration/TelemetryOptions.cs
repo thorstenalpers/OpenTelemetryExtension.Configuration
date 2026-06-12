@@ -1,11 +1,10 @@
-namespace OpenTelemetryExtension.Configuration;
-
-using System;
 using System.ComponentModel.DataAnnotations;
 using Microsoft.Extensions.Logging;
 using OpenTelemetry.Exporter;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Trace;
+
+namespace OpenTelemetryExtension.Configuration;
 
 /// <summary>
 /// Configuration options for OpenTelemetry logging, tracing and metrics.
