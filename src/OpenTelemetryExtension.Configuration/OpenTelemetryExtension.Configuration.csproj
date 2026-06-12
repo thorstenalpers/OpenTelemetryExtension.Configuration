@@ -2,7 +2,7 @@
 
 	<PropertyGroup>
 		<TargetFrameworks>netstandard2.0;net10.0</TargetFrameworks>
-		<Version>2.0.0</Version>
+		<Version>2.0.1</Version>
 		<GeneratePackageOnBuild>false</GeneratePackageOnBuild>
 		<GenerateDocumentationFile>true</GenerateDocumentationFile>
 
@@ -26,8 +26,8 @@
 
 	<!-- Cross-platform packages: usable from any .NET app (ASP.NET Core, WPF, console, ...). -->
 	<ItemGroup>
-		<PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.15.3" />
-		<PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.15.3" />
+		<PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.16.0" />
+		<PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.16.0" />
 		<PackageReference Include="OpenTelemetry.Instrumentation.Http" Version="1.15.1" />
 		<PackageReference Include="OpenTelemetry.Instrumentation.Runtime" Version="1.15.1" />
 	</ItemGroup>

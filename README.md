@@ -425,7 +425,7 @@ gRPC endpoint is exposed on NodePort `31889` (Helm) or host port `31889` (Docker
 
 Traces, metrics and logs from the sample app shown live in the Aspire Dashboard UI:
 
-![](./assets/Aspire-Dashboard.webp)
+![Aspire Dashboard demo](https://raw.githubusercontent.com/thorstenalpers/OpenTelemetryExtension.Configuration/main/assets/Aspire-Dashboard.webp)
 
 ### Jaeger — `appsettings.jaeger.json`
 
@@ -440,7 +440,7 @@ Traces, metrics and logs from the sample app shown live in the Aspire Dashboard 
 
 Traces from the sample app shown in the Jaeger UI:
 
-![](./assets/Jaeger.webp)
+![Jaeger demo](https://raw.githubusercontent.com/thorstenalpers/OpenTelemetryExtension.Configuration/main/assets/Jaeger.webp)
 
 ### OpenObserve — HTTP/protobuf — `appsettings.openobserve-http.json`
 
@@ -456,8 +456,7 @@ Traces from the sample app shown in the Jaeger UI:
 
 The same telemetry explored in the OpenObserve UI:
 
-![](./assets/OpenObserve.webp)
-
+![OpenObserve demo](https://raw.githubusercontent.com/thorstenalpers/OpenTelemetryExtension.Configuration/main/assets/OpenObserve.webp)
 
 ---
 

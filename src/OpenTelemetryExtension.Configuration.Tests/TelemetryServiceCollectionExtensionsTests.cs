@@ -5,7 +5,7 @@ using Microsoft.Extensions.Configuration;
 namespace OpenTelemetryExtension.Configuration.Tests;
 
 [Trait("Category", "Unit")]
-public class TelemetryServiceCollectionExtensionsTests
+public sealed class TelemetryServiceCollectionExtensionsTests
 {
     // ── Helpers ───────────────────────────────────────────────────────────
 
@@ -111,7 +111,11 @@ public class TelemetryServiceCollectionExtensionsTests
 
         var services = NewServices();
         var result = services.AddTelemetry(config);
+
+        var ex = Record.Exception(() => BuildAndResolveProviders(services));
+
         Assert.Same(services, result);
+        Assert.Null(ex);
     }
 
     [Fact]
@@ -146,6 +150,16 @@ public class TelemetryServiceCollectionExtensionsTests
         var services = NewServices();
         Assert.Throws<ValidationException>(() =>
             services.AddTelemetry(o => { }));
+    }
+
+    [Fact]
+    public void AddTelemetry_Action_NullConfigure_ThrowsArgumentNullException()
+    {
+        var services = NewServices();
+
+        // ! is deliberate: the null path is exactly what is under test
+        Assert.Throws<ArgumentNullException>(() =>
+            services.AddTelemetry((Action<TelemetryOptions>)null!));
     }
 
     [Fact]
@@ -257,8 +271,10 @@ public class TelemetryServiceCollectionExtensionsTests
     public void AddTelemetry_RecordExceptionsFalse_DoesNotThrow()
     {
         var services = NewServices();
-        var ex = Record.Exception(() => services.AddTelemetry(MinimalConfigure(o =>
-            o.RecordExceptions = false)));
+        services.AddTelemetry(MinimalConfigure(o => o.RecordExceptions = false));
+
+        var ex = Record.Exception(() => BuildAndResolveProviders(services));
+
         Assert.Null(ex);
     }
 
@@ -277,8 +293,10 @@ public class TelemetryServiceCollectionExtensionsTests
     public void AddTelemetry_ExcludedPathsCustom_DoesNotThrow()
     {
         var services = NewServices();
-        var ex = Record.Exception(() => services.AddTelemetry(MinimalConfigure(o =>
-            o.ExcludedPaths = ["/health", "/metrics"])));
+        services.AddTelemetry(MinimalConfigure(o => o.ExcludedPaths = ["/health", "/metrics"]));
+
+        var ex = Record.Exception(() => BuildAndResolveProviders(services));
+
         Assert.Null(ex);
     }
 
@@ -298,8 +316,10 @@ public class TelemetryServiceCollectionExtensionsTests
     public void AddTelemetry_SampleRatioHalf_DoesNotThrow()
     {
         var services = NewServices();
-        var ex = Record.Exception(() => services.AddTelemetry(MinimalConfigure(o =>
-            o.SampleRatio = 0.5)));
+        services.AddTelemetry(MinimalConfigure(o => o.SampleRatio = 0.5));
+
+        var ex = Record.Exception(() => BuildAndResolveProviders(services));
+
         Assert.Null(ex);
     }
 
@@ -307,8 +327,10 @@ public class TelemetryServiceCollectionExtensionsTests
     public void AddTelemetry_SampleRatioZero_DoesNotThrow()
     {
         var services = NewServices();
-        var ex = Record.Exception(() => services.AddTelemetry(MinimalConfigure(o =>
-            o.SampleRatio = 0.0)));
+        services.AddTelemetry(MinimalConfigure(o => o.SampleRatio = 0.0));
+
+        var ex = Record.Exception(() => BuildAndResolveProviders(services));
+
         Assert.Null(ex);
     }
 
@@ -316,8 +338,10 @@ public class TelemetryServiceCollectionExtensionsTests
     public void AddTelemetry_IncludeScopesFalse_DoesNotThrow()
     {
         var services = NewServices();
-        var ex = Record.Exception(() => services.AddTelemetry(MinimalConfigure(o =>
-            o.IncludeScopes = false)));
+        services.AddTelemetry(MinimalConfigure(o => o.IncludeScopes = false));
+
+        var ex = Record.Exception(() => BuildAndResolveProviders(services));
+
         Assert.Null(ex);
     }
 
@@ -325,8 +349,10 @@ public class TelemetryServiceCollectionExtensionsTests
     public void AddTelemetry_IncludeFormattedMessageFalse_DoesNotThrow()
     {
         var services = NewServices();
-        var ex = Record.Exception(() => services.AddTelemetry(MinimalConfigure(o =>
-            o.IncludeFormattedMessage = false)));
+        services.AddTelemetry(MinimalConfigure(o => o.IncludeFormattedMessage = false));
+
+        var ex = Record.Exception(() => BuildAndResolveProviders(services));
+
         Assert.Null(ex);
     }
 
@@ -336,8 +362,10 @@ public class TelemetryServiceCollectionExtensionsTests
     public void AddTelemetry_WithServiceName_DoesNotThrow()
     {
         var services = NewServices();
-        var ex = Record.Exception(() => services.AddTelemetry(MinimalConfigure(o =>
-            o.ServiceName = "my-api")));
+        services.AddTelemetry(MinimalConfigure(o => o.ServiceName = "my-api"));
+
+        var ex = Record.Exception(() => BuildAndResolveProviders(services));
+
         Assert.Null(ex);
     }
 
@@ -423,12 +451,15 @@ public class TelemetryServiceCollectionExtensionsTests
     public void AddTelemetry_NullCallbacks_DoNotThrow()
     {
         var services = NewServices();
-        var ex = Record.Exception(() => services.AddTelemetry(MinimalConfigure(o =>
+        services.AddTelemetry(MinimalConfigure(o =>
         {
             o.ConfigureTracing = null;
             o.ConfigureMetrics = null;
             o.ConfigureLogging = null;
-        })));
+        }));
+
+        var ex = Record.Exception(() => BuildAndResolveProviders(services));
+
         Assert.Null(ex);
     }
 
@@ -438,8 +469,10 @@ public class TelemetryServiceCollectionExtensionsTests
     public void AddTelemetry_WithHeaders_DoesNotThrow()
     {
         var services = NewServices();
-        var ex = Record.Exception(() => services.AddTelemetry(MinimalConfigure(o =>
-            o.Headers = "Authorization=Bearer token123")));
+        services.AddTelemetry(MinimalConfigure(o => o.Headers = "Authorization=Bearer token123"));
+
+        var ex = Record.Exception(() => BuildAndResolveProviders(services));
+
         Assert.Null(ex);
     }
 
@@ -453,7 +486,10 @@ public class TelemetryServiceCollectionExtensionsTests
             ["Telemetry:Protocol"] = "Grpc",
         });
         var services = NewServices();
-        var ex = Record.Exception(() => services.AddTelemetry(config));
+        services.AddTelemetry(config);
+
+        var ex = Record.Exception(() => BuildAndResolveProviders(services));
+
         Assert.Null(ex);
     }
 
@@ -499,8 +535,9 @@ public class TelemetryServiceCollectionExtensionsTests
             ["Telemetry:AdditionalMeters:0"] = "MyApp.Orders",
         });
         var services = NewServices();
+        services.AddTelemetry(config);
 
-        var ex = Record.Exception(() => services.AddTelemetry(config));
+        var ex = Record.Exception(() => BuildAndResolveProviders(services));
 
         Assert.Null(ex);
     }
@@ -567,8 +604,9 @@ public class TelemetryServiceCollectionExtensionsTests
             ["MyTelemetry:Endpoint"] = "http://localhost:4318",
         });
         var services = NewServices();
+        services.AddTelemetry(config, "MyTelemetry");
 
-        var ex = Record.Exception(() => services.AddTelemetry(config, "MyTelemetry"));
+        var ex = Record.Exception(() => BuildAndResolveProviders(services));
 
         Assert.Null(ex);
     }
@@ -673,8 +711,10 @@ public class TelemetryServiceCollectionExtensionsTests
     public void AddTelemetry_NullServiceName_DoesNotThrow()
     {
         var services = NewServices();
-        var ex = Record.Exception(() =>
-            services.AddTelemetry(MinimalConfigure(o => o.ServiceName = null)));
+        services.AddTelemetry(MinimalConfigure(o => o.ServiceName = null));
+
+        var ex = Record.Exception(() => BuildAndResolveProviders(services));
+
         Assert.Null(ex);
     }
 
@@ -682,8 +722,10 @@ public class TelemetryServiceCollectionExtensionsTests
     public void AddTelemetry_WhitespaceServiceName_DoesNotThrow()
     {
         var services = NewServices();
-        var ex = Record.Exception(() =>
-            services.AddTelemetry(MinimalConfigure(o => o.ServiceName = "   ")));
+        services.AddTelemetry(MinimalConfigure(o => o.ServiceName = "   "));
+
+        var ex = Record.Exception(() => BuildAndResolveProviders(services));
+
         Assert.Null(ex);
     }
 
@@ -691,8 +733,24 @@ public class TelemetryServiceCollectionExtensionsTests
     public void AddTelemetry_EmptyResourceAttributes_DoesNotThrow()
     {
         var services = NewServices();
-        var ex = Record.Exception(() =>
-            services.AddTelemetry(MinimalConfigure(o => o.ResourceAttributes = [])));
+        services.AddTelemetry(MinimalConfigure(o => o.ResourceAttributes = []));
+
+        var ex = Record.Exception(() => BuildAndResolveProviders(services));
+
         Assert.Null(ex);
+    }
+
+    // ── BuildSignalEndpoint (exporter URL construction) ───────────────────
+
+    [Theory]
+    [InlineData("http://localhost:4318", "http://localhost:4318/v1/traces")]
+    [InlineData("http://localhost:4318/", "http://localhost:4318/v1/traces")]
+    [InlineData("http://localhost:30117/api/default", "http://localhost:30117/api/default/v1/traces")]
+    [InlineData("http://localhost:30117/api/default/", "http://localhost:30117/api/default/v1/traces")]
+    public void BuildSignalEndpoint_AppendsSignalPathWithoutDoubleSlash(string endpoint, string expected)
+    {
+        var result = TelemetryServiceCollectionExtensions.BuildSignalEndpoint(new Uri(endpoint), "v1/traces");
+
+        Assert.Equal(new Uri(expected), result);
     }
 }

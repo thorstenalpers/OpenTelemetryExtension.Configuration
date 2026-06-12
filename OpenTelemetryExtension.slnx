@@ -21,6 +21,15 @@
   <Folder Name="/.github/">
     <File Path=".github/copilot-instructions.md" />
   </Folder>
+  <Folder Name="/Release Notes/">
+    <File Path="release-notes/v1.0.0.md" />
+    <File Path="release-notes/v1.0.1.md" />
+    <File Path="release-notes/v1.0.2.md" />
+    <File Path="release-notes/v1.1.0.md" />
+    <File Path="release-notes/v1.1.1.md" />
+    <File Path="release-notes/v2.0.0.md" />
+    <File Path="release-notes/v2.0.1.md" />
+  </Folder>
   <Folder Name="/.github/workflows/">
     <File Path=".github/workflows/ci.yml" />
     <File Path=".github/workflows/deploy-nuget.yml" />
@@ -43,8 +52,8 @@
     <File Path="infrastructure/helm/helm-install-openobserve.cmd" />
     <File Path="infrastructure/helm/helm-install-signoz.cmd" />
     <File Path="infrastructure/helm/helm-install-sqlserver.cmd" />
-    <File Path="infrastructure/helm/nodeports.aspire-dashboard.yaml" />
-    <File Path="infrastructure/helm/values.aspire-dashboard.yaml" />
+    <File Path="infrastructure/helm/aspire-dashboard.nodeports.yaml" />
+    <File Path="infrastructure/helm/aspire-dashboard.values.yaml" />
   </Folder>
   <Folder Name="/Infrastructure/Helm/chart-openobserve/">
     <File Path="infrastructure/helm/chart-openobserve/.helmignore" />
@@ -58,7 +67,6 @@
     <File Path="infrastructure/helm/chart-openobserve/templates/hpa.yaml" />
     <File Path="infrastructure/helm/chart-openobserve/templates/httproute.yaml" />
     <File Path="infrastructure/helm/chart-openobserve/templates/ingress.yaml" />
-    <File Path="infrastructure/helm/chart-openobserve/templates/nodeport.yaml" />
     <File Path="infrastructure/helm/chart-openobserve/templates/pvc.yaml" />
     <File Path="infrastructure/helm/chart-openobserve/templates/service.yaml" />
     <File Path="infrastructure/helm/chart-openobserve/templates/serviceaccount.yaml" />
