@@ -28,10 +28,18 @@ OpenTelemetryExtension.slnx                      # Solution file (repo root)
 
 ## Branches & CI
 
-- `develop` is the default working branch; `main` receives release PRs only.
-- `ci.yml` runs on push/PR to `develop` and `main` (Windows runner): build,
-  unit tests with `--filter "Category=Unit"`, coverage via Coverlet +
-  ReportGenerator, upload to Coveralls.
+The repository follows **GitHub Flow**: `main` is the only long-lived branch and
+is always releasable.
+
+- Branch off `main` for every change — `feature/*` for new functionality,
+  `fix/*` for bug fixes — then open a PR back to `main`. Do not commit directly
+  to `main`.
+- `release/vX.Y.Z` branches are the same mechanism but carry **only** release
+  mechanics (version bump, dependency updates, release notes) — no code changes.
+  They are created by the `prepare-release` skill, not by contributors.
+- `ci.yml` runs on push to `main` and on every PR targeting `main` (Windows
+  runner): build, unit tests with `--filter "Category=Unit"`, coverage via
+  Coverlet + ReportGenerator, upload to Coveralls.
 - `deploy-nuget.yml` is **manual only** (`workflow_dispatch`, Linux runner): it
   builds *only* the library and unit-test projects (the WPF sample cannot build
   on Linux), runs the unit tests, packs, publishes to NuGet.org and GitHub

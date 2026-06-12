@@ -28,7 +28,9 @@ prepare the repository and open the PR.
 
 4. **Confirm clean tree** — `git status --short`; if dirty, ask how to proceed.
 
-5. **Branch** — `git checkout -b release/v<version>`.
+5. **Branch from up-to-date `main`** — `git checkout main && git pull` then
+   `git checkout -b release/v<version>`. The repo uses GitHub Flow; release
+   branches always cut from `main`.
 
 6. **Update the library project's NuGet packages** to latest (`src/OpenTelemetryExtension.Configuration/OpenTelemetryExtension.Configuration.csproj` only — leave Sample/Tests packages alone), then `dotnet restore OpenTelemetryExtension.slnx`.
 

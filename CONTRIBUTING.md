@@ -8,13 +8,14 @@ For anything beyond a small fix, please [open an issue](https://github.com/thors
 
 ## Workflow
 
-1. Fork the repository and create a branch from `develop`.
+1. Fork the repository and create a branch from `main` — use `feature/<name>`
+   for new functionality or `fix/<name>` for bug fixes.
 2. Make your changes.
 3. Add or update tests — every public API change needs test coverage.
 4. When you add or change a feature, run the **unit tests**; if you have the
    telemetry stack running, run the **integration tests** too (see
    [Integration tests](#integration-tests)).
-5. Open a pull request against `develop`.
+5. Open a pull request against `main`.
 
 ## Build & Test
 
