@@ -56,17 +56,21 @@ credentials default to the Helm chart values and can be overridden via the
 
 ## Versioning
 
-This project uses [Semantic Versioning](https://semver.org). The version is maintained manually in [`OpenTelemetryExtension.Configuration.csproj`](./src/OpenTelemetryExtension.Configuration/OpenTelemetryExtension.Configuration.csproj).
+This project uses [Semantic Versioning](https://semver.org).
 
-If your PR changes the public API or behaviour, please:
+**As a contributor, do not touch the version or release notes.** Leave the
+`<Version>` property in
+[`OpenTelemetryExtension.Configuration.csproj`](./src/OpenTelemetryExtension.Configuration/OpenTelemetryExtension.Configuration.csproj)
+and the `release-notes/` folder alone. Bumping the version inside a feature PR
+causes merge conflicts when several PRs are in flight (two PRs editing the same
+`<Version>` line or claiming the same `release-notes/vX.Y.Z.md` file), so
+versioning is deliberately a separate, release-time step — not part of feature
+work.
 
-1. Increment the version in the `<Version>` property:
-   - `PATCH` (e.g. `1.0.2` → `1.0.3`) — bug fixes, internal changes
-   - `MINOR` (e.g. `1.0.2` → `1.1.0`) — new options or features, backwards compatible
-   - `MAJOR` (e.g. `1.0.2` → `2.0.0`) — breaking changes
-2. Add a `release-notes/v{VERSION}.md` file describing what changed.
-
-PRs without a version bump are fine for documentation or refactoring that has no user-visible impact.
+Instead, just describe your change clearly in the PR and flag any breaking
+change. At release time the maintainer cuts the version and writes the notes;
+the `prepare-release` skill decides the SemVer bump (PATCH / MINOR / MAJOR) from
+the commits merged since the last release.
 
 > **Maintainers:** the release-prep steps (version decision, dependency updates, build/test, smoke test, release notes, release PR) are automated by the `prepare-release` Claude Code skill in [`.claude/skills/prepare-release/`](./.claude/skills/prepare-release/). It prepares the PR only — the actual NuGet publish remains the manual **Deploy Nuget** workflow.
 
