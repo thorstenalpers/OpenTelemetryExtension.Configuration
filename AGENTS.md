@@ -6,23 +6,37 @@ Tool-specific files (`CLAUDE.md`, `.github/copilot-instructions.md`) point here.
 ## Project
 
 NuGet package that wires up OpenTelemetry (tracing, metrics, logging) for
-ASP.NET Core via a single `AddTelemetry()` call and `appsettings.json`.
+.NET applications via a single `AddTelemetry()` call and `appsettings.json`.
 
 ## Repository layout
 
 ```
 src/
-  OpenTelemetryExtension.Configuration/             # Library (netstandard2.0 + net10.0)
-  OpenTelemetryExtension.Configuration.Tests/       # xUnit unit tests (net10.0, in-process)
-  OpenTelemetryExtension.Configuration.IntegrationTests/  # Integration tests (net10.0) — query a live OpenObserve
+  Directory.Build.props                            # Shared props: nullable, implicit usings, warnings-as-errors, style enforced in build
+  OpenTelemetryExtension.Configuration/             # Library (netstandard2.0 + net10.0) — the shipped NuGet package
+  OpenTelemetryExtension.Configuration.Tests/       # xUnit unit tests (net10.0, in-process, Category=Unit)
+  OpenTelemetryExtension.Configuration.IntegrationTests/  # Integration tests (net10.0, Category=Integration) — query a live OpenObserve
   OpenTelemetryExtension.Configuration.Sample.WebApi/  # ASP.NET Core sample app (net10.0)
   OpenTelemetryExtension.Configuration.Sample.Wpf/     # WPF desktop sample app (net10.0-windows)
-  OpenTelemetryExtension.slnx                    # Solution file
+infrastructure/helm/                             # Helm charts + install scripts (OpenObserve, SQL Server, Aspire Dashboard, SigNoz)
 .github/workflows/
-  ci.yml                                         # Build + test + coverage on push
-  deploy-nuget.yml                               # Manual NuGet publish + GitHub Release
+  ci.yml                                         # Build + unit tests (Category=Unit) + coverage → Coveralls
+  deploy-nuget.yml                               # Manual NuGet publish + git tag + GitHub Release
 release-notes/                                   # v{VERSION}.md per release
+OpenTelemetryExtension.slnx                      # Solution file (repo root)
 ```
+
+## Branches & CI
+
+- `develop` is the default working branch; `main` receives release PRs only.
+- `ci.yml` runs on push/PR to `develop` and `main` (Windows runner): build,
+  unit tests with `--filter "Category=Unit"`, coverage via Coverlet +
+  ReportGenerator, upload to Coveralls.
+- `deploy-nuget.yml` is **manual only** (`workflow_dispatch`, Linux runner): it
+  builds *only* the library and unit-test projects (the WPF sample cannot build
+  on Linux), runs the unit tests, packs, publishes to NuGet.org and GitHub
+  Packages, tags `v{VERSION}` and creates a GitHub Release from
+  `release-notes/v{VERSION}.md`.
 
 ## Public API (2 classes, minimal surface)
 
@@ -35,25 +49,49 @@ services.AddTelemetry(configuration, o => { ... }, "Sec");  // combined + custom
 services.AddTelemetry(o => { o.Endpoint = new Uri("..."); });
 ```
 
-`TelemetryOptions` is the single configuration model. `Enabled` defaults to
-`true`; set it to `false` to make `AddTelemetry()` a no-op. `Endpoint` is
-`[Required]` and validated at registration time when `Enabled = true`. The
-configuration section name (`Telemetry`) is overridable via the `sectionName`
-parameter on the `IConfiguration` overloads.
+`TelemetryOptions` is the single configuration model:
+
+- **Connection**: `Endpoint` (`[Required]`, validated at registration when
+  enabled), `Headers`, `Protocol` (default `HttpProtobuf`)
+- **Identity**: `ServiceName`, `ResourceAttributes`
+- **Signal switches**: `Enabled` (default `true`; `false` makes `AddTelemetry()`
+  a no-op), `EnableTracing`, `EnableMetrics`, `EnableLogging`
+- **Instrumentation switches** (all default `true`):
+  `EnableAspNetCoreInstrumentation`, `EnableHttpClientInstrumentation`,
+  `EnableRuntimeInstrumentation`, plus `RecordExceptions`, `ExcludedPaths`
+  (default `["/health"]`)
+- **Tracing/metrics extension points**: `AdditionalTracingSources`,
+  `AdditionalMeters`, `SampleRatio`, and `ConfigureTracing` /
+  `ConfigureMetrics` / `ConfigureLogging` callbacks
+- **Logging**: `IncludeScopes`, `IncludeFormattedMessage`
+
+The configuration section name (`Telemetry`) is overridable via the
+`sectionName` parameter on the `IConfiguration` overloads.
+
+## Dependencies
+
+- Main library: only OpenTelemetry SDK packages
+  (`OpenTelemetry.Exporter.OpenTelemetryProtocol`,
+  `OpenTelemetry.Extensions.Hosting`, `OpenTelemetry.Instrumentation.Http`,
+  `OpenTelemetry.Instrumentation.Runtime`;
+  `OpenTelemetry.Instrumentation.AspNetCore` is conditional — **not**
+  referenced for `netstandard2.0` so non-web clients stay lean). Do not add
+  other third-party packages.
+- Unit tests: xUnit + coverlet. The library has `InternalsVisibleTo`
+  for the unit-test project.
 
 ## Build & test
 
 ```bash
 dotnet build OpenTelemetryExtension.slnx -c Release
-dotnet test  src/OpenTelemetryExtension.Configuration.Tests -c Release   # unit tests
+dotnet test  src/OpenTelemetryExtension.Configuration.Tests -c Release --filter "Category=Unit"   # unit tests
 ```
 
-Unit tests use **xUnit + Moq** and run in-process via `ServiceCollection` — no
-infrastructure required.
+Unit tests run in-process via `ServiceCollection` — no infrastructure required.
 
 **Whenever you add or change a feature, run the unit tests. When the telemetry
 stack is running, also run the integration tests** (see below). **CI runs the
-unit tests only** (the workflows filter on `Category=Unit`).
+unit tests only.**
 
 ### Integration tests
 
@@ -64,9 +102,15 @@ API to confirm the data was ingested.
 
 - Needs the OpenObserve Helm chart (`infrastructure/helm/helm-install-openobserve.cmd`);
   the SQL Server chart (`helm-install-sqlserver.cmd`) is required only for the SQL test.
-- Every test is `[Trait("Category", "Integration")]` and **auto-skips** when the
-  backend (or SQL Server) is unreachable, so the suite stays green without the stack.
-- Endpoints/credentials default to the Helm chart values; override via `OTEL_IT_*` env vars.
+- Tests use `[IntegrationFact]` / `[SqlIntegrationFact]` (in `Utils/`) instead
+  of `[Fact]` — they **auto-skip** when OpenObserve (`localhost:30117`) or SQL
+  Server (`localhost:31433`) is unreachable, so the suite stays green without
+  the stack.
+- Shared helpers live in `Utils/`: `IntegrationConfig` (endpoints/credentials),
+  `OpenObserveClient` (`_search` queries), `OtelTestHost`, `Reachability`.
+- Endpoints/credentials default to the Helm chart values; override via env vars:
+  `OTEL_IT_OPENOBSERVE_URL`, `OTEL_IT_OPENOBSERVE_USER`,
+  `OTEL_IT_OPENOBSERVE_PASSWORD`, `OTEL_IT_OTLP_HEADERS`, `OTEL_IT_SQL_CONNECTION`.
 - Run: `dotnet test src/OpenTelemetryExtension.Configuration.IntegrationTests -c Release`.
 
 ## Language & framework
@@ -76,14 +120,14 @@ API to confirm the data was ingested.
 - Target frameworks: `netstandard2.0` and `net10.0` — guard net5.0+ APIs with
   `#if NET5_0_OR_GREATER`. Do not use APIs unavailable on `netstandard2.0`
   without the guard.
-- No third-party packages in the main library beyond the OpenTelemetry SDK
-  packages already referenced
+- `src/Directory.Build.props` applies to every project: `Nullable`,
+  `ImplicitUsings`, `LangVersion=latest`, `TreatWarningsAsErrors=true`,
+  `EnforceCodeStyleInBuild=true` — a style violation fails the build
 
 ## Code conventions
 
 - **File-scoped namespaces** required (`namespace Foo;` not `namespace Foo { }`)
-- **EditorConfig** is enforced at build time (`EnforceCodeStyleInBuild=True`) —
-  do not bypass it
+- **EditorConfig** is enforced at build time — do not bypass it
 - Private fields: `_camelCase`, static fields: `s_camelCase`, interfaces: `IFoo`,
   type params: `TFoo`
 - `var` for local variables when the type is obvious from the right-hand side
@@ -95,18 +139,21 @@ API to confirm the data was ingested.
 
 ## Tests
 
+- **Every unit test class must carry `[Trait("Category", "Unit")]`** (class
+  level). CI and the deploy workflow filter on `Category=Unit` — an untagged
+  test is silently never run in CI.
+- Integration test classes carry `[Trait("Category", "Integration")]` and use
+  `[IntegrationFact]` / `[SqlIntegrationFact]` instead of `[Fact]`
 - xUnit `[Fact]` for single cases, `[Theory]` + `[InlineData]` for parameterised
 - Method name pattern: `MethodOrProperty_Condition_ExpectedResult`
-- Arrange / Act / Assert with a blank line between each section
+- Arrange / Act / Assert with a blank line between each section; trivial
+  single-expression tests (e.g. default-value checks) may stay compact
 - Use `ServiceCollection` + `BuildServiceProvider()` to verify DI registrations —
   no reflection hacks
 - Use `Record.Exception` (not `Assert.Throws<T>`) when asserting that no
   exception is thrown
 - Do not use `Thread.Sleep` or `Task.Delay` in **unit** tests (integration tests
   may poll the backend until telemetry is queryable)
-- Integration tests live in the `*.IntegrationTests` project, are marked
-  `[Trait("Category", "Integration")]` and assert against a live OpenObserve via
-  its `_search` API — see [Integration tests](#integration-tests)
 
 ## Versioning & release
 
@@ -114,10 +161,11 @@ API to confirm the data was ingested.
   `src/OpenTelemetryExtension.Configuration/OpenTelemetryExtension.Configuration.csproj`
   (`<Version>`)
 - Do not change `<Version>` without also creating `release-notes/v{VERSION}.md`
-- NuGet publish is **manual** (`workflow_dispatch`) — never triggered
-  automatically
+  — the GitHub Release body is taken from that file
+- NuGet publish is **manual** (`workflow_dispatch` on `deploy-nuget.yml`) —
+  never triggered automatically; it also creates the `v{VERSION}` git tag
 - The full release-prep workflow (decide SemVer, bump, update deps, build/test,
-  end-to-end smoke test, release notes, PR to `master`) is encoded in the
+  end-to-end smoke test, release notes, PR to `main`) is encoded in the
   **`prepare-release`** skill at `.claude/skills/prepare-release/`. Run it via
   Claude Code (`/prepare-release`) when cutting a release; it only prepares the
   PR — publishing stays the manual `deploy-nuget.yml` trigger.
@@ -130,6 +178,7 @@ API to confirm the data was ingested.
   are excluded from code coverage)
 - Do not add new public API surface without a corresponding test in
   `TelemetryOptionsTests.cs` or `TelemetryServiceCollectionExtensionsTests.cs`
+- Do not add test classes without a `Category` trait (see [Tests](#tests))
 
 ## Adding a new instrumentation option
 

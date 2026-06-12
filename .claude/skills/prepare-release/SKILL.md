@@ -1,6 +1,6 @@
 ---
 name: prepare-release
-description: Prepare a new NuGet release of this repository (version bump, release notes, release PR to master). Use this whenever the user mentions releasing, publishing, shipping, cutting a release, bumping the version, updating OpenTelemetry dependencies, or preparing release notes — even if they don't say "release" explicitly. Decides the next SemVer version automatically and proceeds when the shipped library project has dependency updates or there are any new commits since the last tag.
+description: Prepare a new NuGet release of this repository (version bump, release notes, release PR to main). Use this whenever the user mentions releasing, publishing, shipping, cutting a release, bumping the version, updating OpenTelemetry dependencies, or preparing release notes — even if they don't say "release" explicitly. Decides the next SemVer version automatically and proceeds when the shipped library project has dependency updates or there are any new commits since the last tag.
 ---
 
 # Prepare release
@@ -55,9 +55,9 @@ prepare the repository and open the PR.
 
 12. **Commit** (no tag) — stage csproj(s), docs, release notes; message `release: v<version>`.
 
-13. **Push & PR to master**
+13. **Push & PR to main**
     - `git push -u origin release/v<version>`
-    - `gh pr create --base master --head release/v<version> --title "release: v<version>" --body <notes>`
+    - `gh pr create --base main --head release/v<version> --title "release: v<version>" --body <notes>`
 
 14. **Report** the PR link and remind: after merge, trigger **Deploy Nuget** manually
     (Actions → Deploy Nuget → Run workflow) — it tags `v<version>` and publishes.
