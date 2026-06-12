@@ -26,6 +26,12 @@ release-notes/                                   # v{VERSION}.md per release
 OpenTelemetryExtension.slnx                      # Solution file (repo root)
 ```
 
+`OpenTelemetryExtension.slnx` lists projects **and** loose files (docs, helm
+charts, release notes) explicitly. Whenever you **add, rename, move, or delete**
+a tracked file — including a new `release-notes/v{VERSION}.md` — update the
+`.slnx` to match, or the solution will reference a missing path or miss the new
+file.
+
 ## Branches & CI
 
 The repository follows **GitHub Flow**: `main` is the only long-lived branch and
@@ -45,6 +51,23 @@ is always releasable.
   on Linux), runs the unit tests, packs, publishes to NuGet.org and GitHub
   Packages, tags `v{VERSION}` and creates a GitHub Release from
   `release-notes/v{VERSION}.md`.
+
+## Roles & permissions (admin-only actions)
+
+`main` is protected (PR required, `build` check must pass, `enforce_admins` on —
+**nobody pushes to `main` directly, including the admin**). On top of that, the
+following are reserved for the repository **maintainer (admin)** and an AI agent
+must **never** do them on its own initiative:
+
+- **Reviewing & merging PRs into `main`.** The admin manually reviews **every**
+  PR and performs the merge. An agent prepares branches and **opens** PRs, then
+  **stops** — it does not merge them, does not enable auto-merge, and does not
+  merge its own PRs.
+- **Opening PRs automatically.** An agent may open a PR only while explicitly
+  operated by the admin (e.g. the admin running the `prepare-release` skill).
+- **Triggering `deploy-nuget.yml`.** Publishing (NuGet + GitHub Packages + the
+  `v{VERSION}` tag + GitHub Release) is a manual, admin-only `workflow_dispatch`,
+  run **after** the admin has merged the release PR. An agent never triggers it.
 
 ## Public API (2 classes, minimal surface)
 
@@ -172,14 +195,18 @@ API to confirm the data was ingested.
   `src/OpenTelemetryExtension.Configuration/OpenTelemetryExtension.Configuration.csproj`
   (`<Version>`)
 - Do not change `<Version>` without also creating `release-notes/v{VERSION}.md`
-  — the GitHub Release body is taken from that file
+  (and adding it to `OpenTelemetryExtension.slnx`) — the GitHub Release body is
+  taken from that file
 - NuGet publish is **manual** (`workflow_dispatch` on `deploy-nuget.yml`) —
-  never triggered automatically; it also creates the `v{VERSION}` git tag
+  never triggered automatically; it also creates the `v{VERSION}` git tag. Only
+  the admin triggers it, **after** merging the release PR (see
+  [Roles & permissions](#roles--permissions-admin-only-actions))
 - The full release-prep workflow (decide SemVer, bump, update deps, build/test,
   end-to-end smoke test, release notes, PR to `main`) is encoded in the
   **`prepare-release`** skill at `.claude/skills/prepare-release/`. Run it via
-  Claude Code (`/prepare-release`) when cutting a release; it only prepares the
-  PR — publishing stays the manual `deploy-nuget.yml` trigger.
+  Claude Code (`/prepare-release`) when cutting a release; it only prepares and
+  **opens** the PR — the admin reviews and merges it, then the admin triggers
+  `deploy-nuget.yml`. The skill never merges or publishes.
 
 ## What NOT to do
 
@@ -190,6 +217,10 @@ API to confirm the data was ingested.
 - Do not add new public API surface without a corresponding test in
   `TelemetryOptionsTests.cs` or `TelemetryServiceCollectionExtensionsTests.cs`
 - Do not add test classes without a `Category` trait (see [Tests](#tests))
+- Do not merge PRs into `main`, enable auto-merge, or trigger `deploy-nuget.yml`
+  — those are admin-only (see [Roles & permissions](#roles--permissions-admin-only-actions))
+- Do not add, rename, or delete a tracked file without updating
+  `OpenTelemetryExtension.slnx`
 
 ## Adding a new instrumentation option
 
