@@ -6,9 +6,15 @@ description: Prepare a new NuGet release of this repository (version bump, relea
 # Prepare release
 
 Prepare a new release of this NuGet package. You decide the next version
-yourself. The NuGet publish itself is a **manual** GitHub Actions trigger
-(`deploy-nuget.yml`, `workflow_dispatch`) and is NOT part of your job — you
-prepare the repository and open the PR.
+yourself. You **prepare the repository and open the release PR — then stop.**
+Reviewing, merging, and publishing are **admin-only** and not part of your job:
+
+- You do **not** merge the release PR (or enable auto-merge). The admin reviews
+  and merges every PR manually.
+- You do **not** trigger `deploy-nuget.yml`. The NuGet publish is a manual
+  `workflow_dispatch` the admin runs **after** merging the release PR.
+
+This skill must only be run by the admin (auto-opening PRs is admin-only).
 
 ## Workflow
 
@@ -54,12 +60,16 @@ prepare the repository and open the PR.
 11. **Release notes** — copy `.claude/skills/prepare-release/assets/release-notes.md` to
     `release-notes/v<version>.md`, fill in the `{{VERSION}}`/`{{DATE}}` placeholders
     and the **Added / Changed / Fixed / Removed** sections (omit empty ones).
+    Add the new file to `OpenTelemetryExtension.slnx` (it tracks loose files
+    explicitly — see AGENTS.md).
 
-12. **Commit** (no tag) — stage csproj(s), docs, release notes; message `release: v<version>`.
+12. **Commit** (no tag) — stage csproj(s), docs, release notes, `.slnx`; message `release: v<version>`.
 
-13. **Push & PR to main**
+13. **Push & open PR to main — then stop. Do NOT merge it.**
     - `git push -u origin release/v<version>`
     - `gh pr create --base main --head release/v<version> --title "release: v<version>" --body <notes>`
+    - The admin reviews and merges the PR. You never merge it or enable auto-merge.
 
-14. **Report** the PR link and remind: after merge, trigger **Deploy Nuget** manually
-    (Actions → Deploy Nuget → Run workflow) — it tags `v<version>` and publishes.
+14. **Report** the PR link and remind the admin: after **they** merge it, **they**
+    trigger **Deploy Nuget** manually (Actions → Deploy Nuget → Run workflow) —
+    it tags `v<version>` and publishes. You do not trigger it.
