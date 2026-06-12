@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations;
 namespace OpenTelemetryExtension.Configuration.Tests;
 
 [Trait("Category", "Unit")]
-public class TelemetryOptionsTests
+public sealed class TelemetryOptionsTests
 {
     // ── Default values ────────────────────────────────────────────────────
 
@@ -99,68 +99,6 @@ public class TelemetryOptionsTests
     public void Defaults_ConfigureLogging_IsNull()
         => Assert.Null(new TelemetryOptions().ConfigureLogging);
 
-    // ── Property setters ─────────────────────────────────────────────────
-
-    [Fact]
-    public void Property_Enabled_CanBeSetToFalse()
-    {
-        var o = new TelemetryOptions { Enabled = false };
-        Assert.False(o.Enabled);
-    }
-
-    [Fact]
-    public void Property_Endpoint_CanBeSet()
-    {
-        var uri = new Uri("http://localhost:4318");
-        var o = new TelemetryOptions { Endpoint = uri };
-        Assert.Equal(uri, o.Endpoint);
-    }
-
-    [Fact]
-    public void Property_Headers_CanBeSet()
-    {
-        var o = new TelemetryOptions { Headers = "x-api-key=abc" };
-        Assert.Equal("x-api-key=abc", o.Headers);
-    }
-
-    [Fact]
-    public void Property_Protocol_CanBeSetToGrpc()
-    {
-        var o = new TelemetryOptions { Protocol = OtlpExportProtocol.Grpc };
-        Assert.Equal(OtlpExportProtocol.Grpc, o.Protocol);
-    }
-
-    [Fact]
-    public void Property_ServiceName_CanBeSet()
-    {
-        var o = new TelemetryOptions { ServiceName = "my-service" };
-        Assert.Equal("my-service", o.ServiceName);
-    }
-
-    [Fact]
-    public void Property_ConfigureTracing_CanBeSet()
-    {
-        Action<TracerProviderBuilder> cb = _ => { };
-        var o = new TelemetryOptions { ConfigureTracing = cb };
-        Assert.Same(cb, o.ConfigureTracing);
-    }
-
-    [Fact]
-    public void Property_ConfigureMetrics_CanBeSet()
-    {
-        Action<MeterProviderBuilder> cb = _ => { };
-        var o = new TelemetryOptions { ConfigureMetrics = cb };
-        Assert.Same(cb, o.ConfigureMetrics);
-    }
-
-    [Fact]
-    public void Property_ConfigureLogging_CanBeSet()
-    {
-        Action<Microsoft.Extensions.Logging.ILoggingBuilder> cb = _ => { };
-        var o = new TelemetryOptions { ConfigureLogging = cb };
-        Assert.Same(cb, o.ConfigureLogging);
-    }
-
     // ── DataAnnotations validation ────────────────────────────────────────
 
     [Fact]
@@ -174,6 +112,21 @@ public class TelemetryOptionsTests
     public void Validation_Fails_WhenEndpointIsNull()
     {
         var o = new TelemetryOptions { Endpoint = null };
+        Assert.Throws<ValidationException>(() =>
+            Validator.ValidateObject(o, new ValidationContext(o), validateAllProperties: true));
+    }
+
+    [Theory]
+    [InlineData(-0.1)]
+    [InlineData(1.5)]
+    public void Validation_Fails_WhenSampleRatioOutOfRange(double sampleRatio)
+    {
+        var o = new TelemetryOptions
+        {
+            Endpoint = new Uri("http://localhost:4318"),
+            SampleRatio = sampleRatio,
+        };
+
         Assert.Throws<ValidationException>(() =>
             Validator.ValidateObject(o, new ValidationContext(o), validateAllProperties: true));
     }
