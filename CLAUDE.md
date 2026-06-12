@@ -9,6 +9,7 @@ duplicate its content here.
 
 - Quick start: `dotnet build OpenTelemetryExtension.slnx -c Release`, then
   `dotnet test src/OpenTelemetryExtension.Configuration.Tests -c Release --filter "Category=Unit"`.
-- Day-to-day work happens on `develop`; release PRs target `main`.
+- GitHub Flow: branch off `main` (`feature/*` or `fix/*`) → PR → `main`; never
+  commit straight to `main`. Release branches (`release/*`) are skill-managed.
 - Use the `/prepare-release` skill (`.claude/skills/prepare-release/`) for the
   entire release workflow — never bump `<Version>` or publish manually.
