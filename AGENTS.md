@@ -110,15 +110,24 @@ API to confirm the data was ingested.
 
 - Needs the OpenObserve Helm chart (`infrastructure/helm/helm-install-openobserve.cmd`);
   the SQL Server chart (`helm-install-sqlserver.cmd`) is required only for the SQL test.
-- Tests use `[IntegrationFact]` / `[SqlIntegrationFact]` (in `Utils/`) instead
-  of `[Fact]` — they **auto-skip** when OpenObserve (`localhost:30117`) or SQL
-  Server (`localhost:31433`) is unreachable, so the suite stays green without
-  the stack.
+- Tests use plain `[Fact]` with `[Trait("Category", "Integration")]` at the
+  class level. They do **not** auto-skip — they fail if the backend
+  (OpenObserve `localhost:30117`, SQL Server `localhost:31433`, SigNoz
+  `localhost:30318`/`30111`) is unreachable — and are excluded from CI by the
+  `Category=Unit` filter, so the suite only runs with the stack up.
+- `SigNozIntegrationTests` exercises the same export path against a running
+  **SigNoz** stack (`infrastructure/helm/helm-install-signoz.cmd`): it exports
+  via OTLP HTTP to `localhost:30318` and queries SigNoz's `query_range` API
+  (`localhost:30111`) to confirm ingestion. The dev admin login
+  (`admin@web.de`) is created automatically on first boot by the
+  `signoz.bootstrap-admin.yaml` Job that the install script applies; the org id
+  is resolved at runtime. Credentials are the local dev defaults in
+  `IntegrationConfig`.
 - Shared helpers live in `Utils/`: `IntegrationConfig` (endpoints/credentials),
-  `OpenObserveClient` (`_search` queries), `OtelTestHost`, `Reachability`.
-- Endpoints/credentials default to the Helm chart values; override via env vars:
-  `OTEL_IT_OPENOBSERVE_URL`, `OTEL_IT_OPENOBSERVE_USER`,
-  `OTEL_IT_OPENOBSERVE_PASSWORD`, `OTEL_IT_OTLP_HEADERS`, `OTEL_IT_SQL_CONNECTION`.
+  `OpenObserveClient` (`_search` queries), `SigNozClient` (`query_range`),
+  `OtelTestHost`.
+- Endpoints/credentials are hardcoded local-dev defaults in `IntegrationConfig`
+  (matching the Helm chart values); they are dev-only and not real secrets.
 - Run: `dotnet test src/OpenTelemetryExtension.Configuration.IntegrationTests -c Release`.
 
 ## Language & framework
@@ -153,8 +162,8 @@ API to confirm the data was ingested.
 - **Every unit test class must carry `[Trait("Category", "Unit")]`** (class
   level). CI and the deploy workflow filter on `Category=Unit` — an untagged
   test is silently never run in CI.
-- Integration test classes carry `[Trait("Category", "Integration")]` and use
-  `[IntegrationFact]` / `[SqlIntegrationFact]` instead of `[Fact]`
+- Integration test classes carry `[Trait("Category", "Integration")]` at the
+  class level and use plain `[Fact]` / `[Theory]`
 - xUnit `[Fact]` for single cases, `[Theory]` + `[InlineData]` for parameterised
 - Method name pattern: `MethodOrProperty_Condition_ExpectedResult`
 - Arrange / Act / Assert with a blank line between each section; trivial
@@ -177,7 +186,7 @@ API to confirm the data was ingested.
   never triggered automatically; it also creates the `v{VERSION}` git tag
 - The full release-prep workflow (decide SemVer, bump, update deps, build/test,
   end-to-end smoke test, release notes, PR to `main`) is encoded in the
-  **`prepare-release`** skill at `.claude/skills/prepare-release/`. Run it via
+  **`prepare-release`** skill at `.agents/skills/prepare-release/`. Run it via
   Claude Code (`/prepare-release`) when cutting a release; it only prepares the
   PR — publishing stays the manual `deploy-nuget.yml` trigger.
 

@@ -72,7 +72,7 @@ change. At release time the maintainer cuts the version and writes the notes;
 the `prepare-release` skill decides the SemVer bump (PATCH / MINOR / MAJOR) from
 the commits merged since the last release.
 
-> **Maintainers:** the release-prep steps (version decision, dependency updates, build/test, smoke test, release notes, release PR) are automated by the `prepare-release` Claude Code skill in [`.claude/skills/prepare-release/`](./.claude/skills/prepare-release/). It prepares the PR only — the actual NuGet publish remains the manual **Deploy Nuget** workflow.
+> **Maintainers:** the release-prep steps (version decision, dependency updates, build/test, smoke test, release notes, release PR) are automated by the `prepare-release` Claude Code skill in [`.agents/skills/prepare-release/`](./.agents/skills/prepare-release/). It prepares the PR only — the actual NuGet publish remains the manual **Deploy Nuget** workflow.
 
 ## Adding a New Instrumentation Option
 
