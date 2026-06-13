@@ -13,7 +13,7 @@ prepare the repository and open the PR.
 ## Workflow
 
 1. **Check whether there is anything to release**
-   - Run the helper: `bash .claude/skills/prepare-release/scripts/check-otel-updates.sh`
+   - Run the helper: `bash .agents/skills/prepare-release/scripts/check-otel-updates.sh`
    - The helper only inspects the **shipped library project** (`src/OpenTelemetryExtension.Configuration/...csproj`). Dependency updates in the Sample or Tests projects are ignored — they are never published and must not trigger a new version.
    - Exit code **3** = nothing to release (no library dependency updates *and* no new commits since the last tag) → **stop**.
    - Exit code **0** = library dependency updates and/or new commits exist → continue.
@@ -43,7 +43,7 @@ prepare the repository and open the PR.
    OpenObserve is used because it has a real query API, so the test can
    positively confirm ingested data. The helper starts OpenObserve via its Helm
    chart, runs the sample, generates traffic and queries the API for records:
-   - `bash .claude/skills/prepare-release/scripts/smoke-test.sh`
+   - `bash .agents/skills/prepare-release/scripts/smoke-test.sh`
    - Exit 0 = telemetry confirmed → continue. Non-zero = stop and report; do not
      release if telemetry does not arrive.
 
@@ -51,7 +51,7 @@ prepare the repository and open the PR.
 
 10. **Extend docs** — update `README.md` etc. for the changes/new dep versions.
 
-11. **Release notes** — copy `.claude/skills/prepare-release/assets/release-notes.md` to
+11. **Release notes** — copy `.agents/skills/prepare-release/assets/release-notes.md` to
     `release-notes/v<version>.md`, fill in the `{{VERSION}}`/`{{DATE}}` placeholders
     and the **Added / Changed / Fixed / Removed** sections (omit empty ones).
 
