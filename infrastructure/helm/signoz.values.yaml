@@ -798,7 +798,7 @@ signoz:
     labels: {}
     # signoz.service.type - The service type (`ClusterIP`, `NodePort`, `LoadBalancer`).
     # @default -- "ClusterIP"
-    type: NodePort
+    type: ClusterIP
     # signoz.service.port - The external HTTP port for SigNoz.
     # @default -- 8080
     port: 8080
@@ -810,7 +810,7 @@ signoz:
     opampPort: 4320
     # signoz.service.nodePort - Manually specify the nodePort for HTTP when `service.type` is `NodePort`.
     # @default -- null
-    nodePort: 30111
+    nodePort: null
     # signoz.service.internalNodePort - Manually specify the nodePort for the internal port when `service.type` is `NodePort`.
     # @default -- null
     internalNodePort: null

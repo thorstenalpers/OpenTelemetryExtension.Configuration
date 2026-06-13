@@ -1,0 +1,33 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: signoz-bootstrap-admin
+  namespace: default
+spec:
+  backoffLimit: 20
+  ttlSecondsAfterFinished: 300
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: register
+          image: curlimages/curl:8.11.0
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              set -eu
+              echo "Waiting for SigNoz to be ready..."
+              until curl -sf http://signoz:8080/api/v1/health >/dev/null 2>&1; do sleep 3; done
+              echo "Registering dev admin (idempotent)..."
+              code=$(curl -s -o /tmp/out -w "%{http_code}" -X POST \
+                -H "Content-Type: application/json" \
+                -d '{"email":"admin@web.de","password":"$$$AdminPass123","orgDisplayName":"dev"}' \
+                http://signoz:8080/api/v1/register)
+              echo "register -> ${code}: $(cat /tmp/out)"
+              case "${code}" in
+                200|201) echo "admin created"; exit 0 ;;
+              esac
+              if grep -q "self-registration is disabled" /tmp/out; then
+                echo "already initialized; nothing to do"; exit 0
+              fi
+              echo "unexpected register failure"; exit 1

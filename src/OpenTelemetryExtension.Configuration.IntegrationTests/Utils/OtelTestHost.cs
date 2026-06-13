@@ -23,6 +23,11 @@ internal sealed class OtelTestHost : IDisposable
         });
 
         _provider = services.BuildServiceProvider();
+
+        // Instantiate the providers up front so the ActivityListener and metric
+        // readers are active before the test creates spans or measurements.
+        _provider.GetService<TracerProvider>();
+        _provider.GetService<MeterProvider>();
     }
 
     public ILogger<T> CreateLogger<T>() => _provider.GetRequiredService<ILogger<T>>();

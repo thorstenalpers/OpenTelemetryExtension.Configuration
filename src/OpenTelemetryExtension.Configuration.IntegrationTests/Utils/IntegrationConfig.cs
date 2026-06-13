@@ -8,4 +8,9 @@ internal static class IntegrationConfig
     public static string OtlpHeaders => "Authorization=Basic YWRtaW5Ad2ViLmRlOmFkbWlu,stream-name=default";
     public static Uri OtlpEndpoint => new(OpenObserveBaseUrl);
     public static string SqlConnectionString => "Server=localhost,31433;Database=master;User Id=sa;Password=YourStrongPassword123!;TrustServerCertificate=True;Encrypt=False";
+
+    public static Uri SigNozOtlpEndpoint => new("http://localhost:30318");
+    public static string SigNozApiBaseUrl => "http://localhost:30111";
+    public static string SigNozUser => "admin@web.de";
+    public static string SigNozPassword => "$$$AdminPass123";
 }
