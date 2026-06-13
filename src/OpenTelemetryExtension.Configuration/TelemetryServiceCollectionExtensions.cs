@@ -209,7 +209,7 @@ public static class TelemetryServiceCollectionExtensions
 
                 options.ConfigureTracing?.Invoke(tracing);
 
-                tracing.AddOtlpExporter(exp => ConfigureOtlpExporter(exp, options, "v1/traces"));
+                tracing.AddOtlpExporter(exp => ConfigureTraceExporter(exp, options));
             });
         }
 
@@ -241,7 +241,7 @@ public static class TelemetryServiceCollectionExtensions
 
                 options.ConfigureMetrics?.Invoke(metrics);
 
-                metrics.AddOtlpExporter(exp => ConfigureOtlpExporter(exp, options, "v1/metrics"));
+                metrics.AddOtlpExporter(exp => ConfigureMetricExporter(exp, options));
             });
         }
 
@@ -256,15 +256,25 @@ public static class TelemetryServiceCollectionExtensions
                     otel.IncludeScopes = options.IncludeScopes;
                     otel.IncludeFormattedMessage = options.IncludeFormattedMessage;
 
-                    otel.AddOtlpExporter(exp => ConfigureOtlpExporter(exp, options, "v1/logs"));
+                    otel.AddOtlpExporter(exp => ConfigureLogExporter(exp, options));
                 });
             });
         }
     }
 
+    private static void ConfigureTraceExporter(OtlpExporterOptions exporter, TelemetryOptions options)
+        => ConfigureOtlpExporter(exporter, options, "v1/traces");
+
+    private static void ConfigureMetricExporter(OtlpExporterOptions exporter, TelemetryOptions options)
+        => ConfigureOtlpExporter(exporter, options, "v1/metrics");
+
+    private static void ConfigureLogExporter(OtlpExporterOptions exporter, TelemetryOptions options)
+        => ConfigureOtlpExporter(exporter, options, "v1/logs");
+
     private static void ConfigureOtlpExporter(OtlpExporterOptions exporter, TelemetryOptions options, string signalPath)
     {
         // ! is safe: Endpoint is [Required]-validated before ConfigureTelemetry runs
+        // gRPC posts every signal to the base endpoint; HttpProtobuf needs the per-signal path appended.
 #pragma warning disable CS0618 // OtlpExportProtocol.Grpc is intentionally supported; warning only applies to netstandard2.0 without HttpClientFactory
         exporter.Endpoint = options.Protocol == OtlpExportProtocol.Grpc
             ? options.Endpoint!
