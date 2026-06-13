@@ -1,22 +1,14 @@
 <Solution>
-  <Folder Name="/Docs/">
-    <File Path="AGENTS.md" />
-    <File Path="CLAUDE.md" />
-    <File Path="CODE_OF_CONDUCT.md" />
-    <File Path="CONTRIBUTING.md" />
-    <File Path="LICENSE" />
-    <File Path="README.md" />
+  <Folder Name="/.agents/" />
+  <Folder Name="/.agents/skills/" />
+  <Folder Name="/.agents/skills/prepare-release/">
+    <File Path=".agents/skills/prepare-release/SKILL.md" />
   </Folder>
-  <Folder Name="/.claude/" />
-  <Folder Name="/.claude/skills/" />
-  <Folder Name="/.claude/skills/prepare-release/">
-    <File Path=".claude/skills/prepare-release/SKILL.md" />
+  <Folder Name="/.agents/skills/prepare-release/scripts/">
+    <File Path=".agents/skills/prepare-release/scripts/check-otel-updates.sh" />
   </Folder>
-  <Folder Name="/.claude/skills/prepare-release/scripts/">
-    <File Path=".claude/skills/prepare-release/scripts/check-otel-updates.sh" />
-  </Folder>
-  <Folder Name="/.claude/skills/prepare-release/assets/">
-    <File Path=".claude/skills/prepare-release/assets/release-notes.md" />
+  <Folder Name="/.agents/skills/prepare-release/assets/">
+    <File Path=".agents/skills/prepare-release/assets/release-notes.md" />
   </Folder>
   <Folder Name="/.github/">
     <File Path=".github/copilot-instructions.md" />
@@ -55,6 +47,8 @@
     <File Path="infrastructure/helm/helm-install-sqlserver.cmd" />
     <File Path="infrastructure/helm/aspire-dashboard.nodeports.yaml" />
     <File Path="infrastructure/helm/aspire-dashboard.values.yaml" />
+    <File Path="infrastructure/helm/signoz.nodeports.yaml" />
+    <File Path="infrastructure/helm/signoz.values.yaml" />
   </Folder>
   <Folder Name="/Infrastructure/Helm/chart-openobserve/">
     <File Path="infrastructure/helm/chart-openobserve/.helmignore" />
@@ -86,5 +80,17 @@
   <Project Path="src/OpenTelemetryExtension.Configuration.Sample.Wpf/OpenTelemetryExtension.Configuration.Sample.Wpf.csproj" />
   <Project Path="src/OpenTelemetryExtension.Configuration/OpenTelemetryExtension.Configuration.csproj" />
   <Project Path="src/OpenTelemetryExtension.Configuration.Tests/OpenTelemetryExtension.Configuration.Tests.csproj" />
+  <Folder Name="/Solution Items/">
+    <File Path=".editorconfig" />
+    <File Path=".gitattributes" />
+    <File Path=".gitignore" />
+    <File Path="AGENTS.md" />
+    <File Path="CLAUDE.md" />
+    <File Path="CODE_OF_CONDUCT.md" />
+    <File Path="CONTRIBUTING.md" />
+    <File Path="LICENSE" />
+    <File Path="README.md" />
+    <File Path="SECURITY.md" />
+  </Folder>
   <Project Path="src/OpenTelemetryExtension.Configuration.IntegrationTests/OpenTelemetryExtension.Configuration.IntegrationTests.csproj" />
 </Solution>

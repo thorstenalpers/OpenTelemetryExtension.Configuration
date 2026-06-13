@@ -33,6 +33,12 @@ public class Program
         });
 
         var app = builder.Build();
+
+        using (var scope = app.Services.CreateScope())
+        {
+            scope.ServiceProvider.GetRequiredService<AppDbContext>().Database.Migrate();
+        }
+
         app.MapHealthChecks("/health");
         app.UseSwagger();
         app.UseSwaggerUI();

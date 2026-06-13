@@ -1,5 +1,5 @@
 
-helm uninstall sqlserver
-helm install sqlserver ./chart-sqlserver
+helm uninstall sqlserver --wait --timeout 120s
+helm install sqlserver ./chart-sqlserver --wait --timeout 120s
 
 pause

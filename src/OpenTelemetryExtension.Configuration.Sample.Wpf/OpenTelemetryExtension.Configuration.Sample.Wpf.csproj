@@ -7,6 +7,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
     <ExcludeFromCodeCoverage>true</ExcludeFromCodeCoverage>
+	  <Version>9.9.9.9</Version>
   </PropertyGroup>
 
   <ItemGroup>

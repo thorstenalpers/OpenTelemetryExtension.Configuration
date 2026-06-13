@@ -6,7 +6,8 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
     <DockerfileContext>..\WpfApp</DockerfileContext>
-	<ExcludeFromCodeCoverage>true</ExcludeFromCodeCoverage>
+    <ExcludeFromCodeCoverage>true</ExcludeFromCodeCoverage>
+    <Version>1.1.1.1</Version>
   </PropertyGroup>
 
   <ItemGroup>
