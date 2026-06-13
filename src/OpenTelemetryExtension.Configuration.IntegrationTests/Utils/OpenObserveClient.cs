@@ -1,13 +1,9 @@
-using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
 
 namespace OpenTelemetryExtension.Configuration.IntegrationTests.Utils;
 
-// Thin wrapper around the OpenObserve _search API used to assert that emitted
-// telemetry actually arrived. The API needs the root user credentials, not the
-// OTLP ingestion passcode.
 internal sealed class OpenObserveClient : IDisposable
 {
     private const long OneHourMicros = 3_600_000_000L;
@@ -16,8 +12,7 @@ internal sealed class OpenObserveClient : IDisposable
 
     public OpenObserveClient()
     {
-        var credentials = Convert.ToBase64String(
-            Encoding.UTF8.GetBytes($"{IntegrationConfig.OpenObserveUser}:{IntegrationConfig.OpenObservePassword}"));
+        var credentials = Convert.ToBase64String(Encoding.UTF8.GetBytes($"{IntegrationConfig.OpenObserveUser}:{IntegrationConfig.OpenObservePassword}"));
         _http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", credentials);
     }
 
@@ -30,7 +25,6 @@ internal sealed class OpenObserveClient : IDisposable
         using var response = await _http.PostAsync(
             $"{IntegrationConfig.OpenObserveBaseUrl}/_search?type={streamType}", content, ct);
 
-        // A missing stream (no data yet) answers non-2xx; treat it as "nothing there yet".
         if (!response.IsSuccessStatusCode)
         {
             return 0;

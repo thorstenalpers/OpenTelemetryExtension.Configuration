@@ -10,7 +10,7 @@ public sealed class TelemetryIntegrationTests
 {
     private static readonly TimeSpan QueryTimeout = TimeSpan.FromSeconds(40);
 
-    [IntegrationFact]
+    [Fact]
     public async Task Traces_AreExported_AndQueryableInOpenObserve()
     {
         var runId = Guid.NewGuid().ToString("N");
@@ -43,7 +43,7 @@ public sealed class TelemetryIntegrationTests
         Assert.True(count > 0, $"Expected at least one trace for service '{serviceName}' in OpenObserve.");
     }
 
-    [IntegrationFact]
+    [Fact]
     public async Task Metrics_AreExported_AndQueryableInOpenObserve()
     {
         var runId = Guid.NewGuid().ToString("N");
@@ -75,7 +75,7 @@ public sealed class TelemetryIntegrationTests
         Assert.True(count > 0, $"Expected the metrics stream '{counterName}' to contain data points in OpenObserve.");
     }
 
-    [IntegrationFact]
+    [Fact]
     public async Task Logs_AreExported_AndQueryableInOpenObserve()
     {
         var runId = Guid.NewGuid().ToString("N");
