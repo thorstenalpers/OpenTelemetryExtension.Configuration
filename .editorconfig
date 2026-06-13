@@ -1,7 +1,15 @@
 																							 
 root = true
 
-# Generated EF Core migrations — skip style rules
+[*.csproj]
+indent_style = space
+indent_size = 2
+tab_width = 2
+insert_final_newline = true
+
+# optional XML-spezifisch
+charset = utf-8
+
 [src/**/Migrations/*.cs]
 generated_code = true
 dotnet_analyzer_diagnostic.severity = none
