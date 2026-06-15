@@ -1,14 +1,14 @@
 <Solution>
-  <Folder Name="/.agents/" />
-  <Folder Name="/.agents/skills/" />
-  <Folder Name="/.agents/skills/prepare-release/">
-    <File Path=".agents/skills/prepare-release/SKILL.md" />
+  <Folder Name="/.claude/" />
+  <Folder Name="/.claude/skills/" />
+  <Folder Name="/.claude/skills/prepare-release/">
+    <File Path=".claude/skills/prepare-release/SKILL.md" />
   </Folder>
-  <Folder Name="/.agents/skills/prepare-release/scripts/">
-    <File Path=".agents/skills/prepare-release/scripts/check-otel-updates.sh" />
+  <Folder Name="/.claude/skills/prepare-release/scripts/">
+    <File Path=".claude/skills/prepare-release/scripts/check-otel-updates.sh" />
   </Folder>
-  <Folder Name="/.agents/skills/prepare-release/assets/">
-    <File Path=".agents/skills/prepare-release/assets/release-notes.md" />
+  <Folder Name="/.claude/skills/prepare-release/assets/">
+    <File Path=".claude/skills/prepare-release/assets/release-notes.md" />
   </Folder>
   <Folder Name="/.github/">
     <File Path=".github/copilot-instructions.md" />

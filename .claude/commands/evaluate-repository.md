@@ -72,7 +72,7 @@ evidence, and note uncertainty.
 - `ci.yml` builds + runs `Category=Unit`; `deploy-nuget.yml` is manual-only and
   builds only library + unit-test projects.
 - Local-execution surface under `infrastructure/helm/` (install `.cmd`/`.sh`
-  scripts, the `signoz.bootstrap-admin` Job) and `.agents/` (skills, commands,
+  scripts, the `signoz.bootstrap-admin` Job) and `.claude/` (skills, commands,
   `settings.local.json`): note anything that runs implicitly or with elevated
   trust, and confirm it is documented.
 

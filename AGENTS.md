@@ -212,7 +212,7 @@ API to confirm the data was ingested.
   [Roles & permissions](#roles--permissions-admin-only-actions))
 - The full release-prep workflow (decide SemVer, bump, update deps, build/test,
   end-to-end smoke test, release notes, PR to `main`) is encoded in the
-  **`prepare-release`** skill at `.agents/skills/prepare-release/`. Run it via
+  **`prepare-release`** skill at `.claude/skills/prepare-release/`. Run it via
   Claude Code (`/prepare-release`) when cutting a release; it only prepares the
   PR — publishing stays the manual `deploy-nuget.yml` trigger.
 

@@ -91,7 +91,7 @@ yarn-error.log*
 /logs
 /archiv
 /_archiv
-/.agents/settings.local.json
+/.claude/settings.local.json
 
 **/TestResult/
 /test.html.lnk
