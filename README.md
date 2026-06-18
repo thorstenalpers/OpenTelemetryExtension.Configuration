@@ -6,19 +6,16 @@
 [![Downloads](https://img.shields.io/nuget/dt/OpenTelemetryExtension.Configuration?style=flat-square&logo=nuget&logoColor=white&label=downloads)](https://www.nuget.org/packages/OpenTelemetryExtension.Configuration)
 [![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](./LICENSE)
 
-Configurable OpenTelemetry setup for .NET applications providing **tracing, metrics, and logging** via OTLP, configurable through code or `appsettings.json`.
+Drop-in OpenTelemetry setup for .NET — **tracing, metrics and logging** over OTLP, configured through code or configuration.
 
 ---
 
 ## ✨ Features
 
-- **One-call setup** — tracing, metrics and logging via a single `AddTelemetry()`, configured from `appsettings.json` or code
-- **All three signals over OTLP** — HTTP/protobuf or gRPC, to any OTLP-compatible backend
-- **Built-in instrumentation** — `HttpClient` and .NET runtime metrics everywhere; ASP.NET Core instrumentation on web targets — each toggleable. Database instrumentation is opt-in via a one-liner (see [Databases](#databases))
-- **Sensible defaults** — configurable sampling, health-check path exclusion and exception recording work out of the box
-- **Startup validation** — misconfiguration fails fast with a clear error
-- **Extensible** — `ConfigureTracing`/`ConfigureMetrics`/`ConfigureLogging` hooks for custom sources, meters and providers
-- **Works on any .NET** — ASP.NET Core, WPF, console and more; the `netstandard2.0` build pulls **no** ASP.NET Core dependencies
+- **One-call setup** — tracing, metrics and logging via a single `AddTelemetry()`, from `appsettings.json` or code
+- **Works on any .NET** — ASP.NET Core, WPF, console and more, exporting over OTLP to any compatible backend
+- **Auto-instrumentation** — `HttpClient`, ASP.NET Core and .NET runtime traced and measured automatically, each toggleable
+- **Extensible** — add your own sources, meters and databases when you need them
 
 ---
 
@@ -36,6 +33,29 @@ Configurable OpenTelemetry setup for .NET applications providing **tracing, metr
 ```bash
 dotnet add package OpenTelemetryExtension.Configuration
 ```
+
+### Other ways to consume it
+
+The NuGet package is the recommended path, but it isn't the only one:
+
+- **As source / project reference** — clone or copy
+  [`OpenTelemetryExtension.Configuration`](./src/OpenTelemetryExtension.Configuration)
+  into your repository and add a `<ProjectReference>` to it (or drop the few
+  files straight into your project). Handy when you want to tweak the defaults
+  or step through the setup code.
+- **As a git submodule** — pin the source at a specific commit and reference the
+  project from your solution:
+  ```bash
+  git submodule add https://github.com/thorstenalpers/OpenTelemetryExtension.Configuration.git external/OpenTelemetryExtension.Configuration
+  ```
+  then add a `<ProjectReference>` to
+  `external/OpenTelemetryExtension.Configuration/src/OpenTelemetryExtension.Configuration/OpenTelemetryExtension.Configuration.csproj`.
+- **As a fork** — fork the repository and adapt it to your needs. Optionally, if
+  your changes are generally useful, open a pull request back upstream. See
+  [Contributing](#-contributing).
+
+In every case the API is identical — `AddTelemetry(...)` works the same whether
+the type comes from a NuGet package or your own copy of the source.
 
 ---
 
