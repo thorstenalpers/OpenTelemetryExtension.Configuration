@@ -38,11 +38,15 @@ dotnet add package OpenTelemetryExtension.Configuration
 
 The NuGet package is the recommended path, but it isn't the only one:
 
-- **As source / project reference** — clone or copy
+- **As source / project reference or a plain copy** — the library is just two
+  files. Either clone
   [`OpenTelemetryExtension.Configuration`](./src/OpenTelemetryExtension.Configuration)
-  into your repository and add a `<ProjectReference>` to it (or drop the few
-  files straight into your project). Handy when you want to tweak the defaults
-  or step through the setup code.
+  into your repository and add a `<ProjectReference>` to it, or drop the two files
+  straight into your project (no package, no reference) and own them outright:
+  [`TelemetryServiceCollectionExtensions.cs`](./src/OpenTelemetryExtension.Configuration/TelemetryServiceCollectionExtensions.cs)
+  and
+  [`TelemetryOptions.cs`](./src/OpenTelemetryExtension.Configuration/TelemetryOptions.cs).
+  Handy when you want to tweak the defaults or step through the setup code.
 - **As a git submodule** — pin the source at a specific commit and reference the
   project from your solution:
   ```bash
@@ -87,33 +91,37 @@ That's it — tracing, metrics and logging are exported via OTLP.
 
 ## ⚙️ Configuration
 
-All options live under the `Telemetry` key in `appsettings.json`.
+All keys live under the **`Telemetry`** section. Only `Endpoint` is required; everything
+else has a default and telemetry is on out of the box. Bind from `appsettings.json` or set
+the same properties in the `AddTelemetry(o => …)` callback.
 
-| Property | Type | Default | Description |
-|---|---|---|---|
-| `Enabled` | `bool` | `true` | Set to `false` to disable telemetry (no OpenTelemetry services are registered). |
-| `Endpoint` | `Uri` | *(required)* | OTLP collector endpoint, e.g. `http://localhost:4318`. |
-| `Headers` | `string` | `""` | Exporter headers. Format: `key1=value1,key2=value2`. |
-| `Protocol` | `string` | `HttpProtobuf` | `HttpProtobuf` (port 4318) or `Grpc` (port 4317). |
-| `ServiceName` | `string?` | `null` | Service name shown in the backend. |
-| `ResourceAttributes` | `object` | `{}` | Extra resource attributes, e.g. `{ "deployment.environment": "production", "team": "backend" }`. |
-| `AdditionalTracingSources` | `string[]` | `[]` | Extra `ActivitySource` names to collect (e.g. `"Npgsql"`, your own app sources) — registered via `AddSource`. |
-| `AdditionalMeters` | `string[]` | `[]` | Extra `Meter` names to collect (e.g. `"MyApp.Orders"`) — registered via `AddMeter`. |
-| `SampleRatio` | `double` | `1.0` | Fraction of traces to sample. `0.1` = 10%, `1.0` = all. |
-| `EnableTracing` | `bool` | `true` | Enables distributed tracing. |
-| `EnableMetrics` | `bool` | `true` | Enables metrics collection. |
-| `EnableLogging` | `bool` | `true` | Enables log export via OTLP. |
-| `EnableAspNetCoreInstrumentation` | `bool` | `true` | Instruments incoming HTTP requests. |
-| `EnableHttpClientInstrumentation` | `bool` | `true` | Instruments outgoing `HttpClient` requests. |
-| `EnableRuntimeInstrumentation` | `bool` | `true` | Collects GC, memory and thread pool metrics. |
-| `RecordExceptions` | `bool` | `true` | Records exception stack traces on spans. |
-| `ExcludedPaths` | `string[]` | `["/health"]` | Paths excluded from tracing. |
-| `IncludeScopes` | `bool` | `true` | Includes log scopes in exported log records. |
-| `IncludeFormattedMessage` | `bool` | `true` | Includes the formatted message in exported log records. |
+| Key | Description | Type | Default | Example |
+|---|---|---|---|---|
+| `Endpoint` | [OTLP](https://opentelemetry.io/docs/languages/net/exporters/) endpoint for traces, metrics and logs. | `Uri` | — *(required)* | `https://otel.example.com:4317` |
+| `Protocol` | [Transport protocol](https://opentelemetry.io/docs/languages/net/exporters/): `HttpProtobuf` (4318) or `Grpc` (4317). | `string` | `HttpProtobuf` | `Grpc` |
+| `Headers` | [OTLP exporter headers](https://opentelemetry.io/docs/languages/net/exporters/), e.g. for auth. Format: `k1=v1,k2=v2`. | `string` | `""` | `x-otlp-api-key=secret` |
+| `Enabled` | Master switch; `false` registers no OpenTelemetry at all. | `bool` | `true` | `false` |
+| `ServiceName` | Logical [service name](https://opentelemetry.io/docs/specs/semconv/resource/) shown in the backend. | `string?` | `null` | `orders-api` |
+| `ResourceAttributes` | Extra [resource attributes](https://opentelemetry.io/docs/specs/semconv/resource/). | `object` | `{}` | `{ "deployment.environment": "production" }` |
+| `EnableTracing` | Distributed [tracing](https://opentelemetry.io/docs/concepts/signals/traces/). | `bool` | `true` | `false` |
+| `EnableMetrics` | [Metrics](https://opentelemetry.io/docs/concepts/signals/metrics/) collection. | `bool` | `true` | `false` |
+| `EnableLogging` | [Log](https://opentelemetry.io/docs/concepts/signals/logs/) export via OTLP. | `bool` | `true` | `false` |
+| `SampleRatio` | Trace [sample](https://opentelemetry.io/docs/concepts/sampling/) fraction — `1.0` = all, `0.1` = 10% (`ParentBased(TraceIdRatioBased)`). | `double` | `1.0` | `0.1` |
+| `EnableAspNetCoreInstrumentation` | Incoming [ASP.NET Core](https://www.nuget.org/packages/OpenTelemetry.Instrumentation.AspNetCore) requests *(net10.0 only; no-op on netstandard2.0)*. | `bool` | `true` | `false` |
+| `EnableHttpClientInstrumentation` | Outgoing [`HttpClient`](https://www.nuget.org/packages/OpenTelemetry.Instrumentation.Http) requests. | `bool` | `true` | `false` |
+| `EnableRuntimeInstrumentation` | [.NET runtime metrics](https://www.nuget.org/packages/OpenTelemetry.Instrumentation.Runtime) (GC, memory, thread pool). | `bool` | `true` | `false` |
+| `AdditionalTracingSources` | Extra [`ActivitySource`](https://learn.microsoft.com/dotnet/core/diagnostics/distributed-tracing-instrumentation-walkthroughs) names to collect. | `string[]` | `[]` | `[ "Npgsql", "MyApp" ]` |
+| `AdditionalMeters` | Extra [`Meter`](https://learn.microsoft.com/dotnet/core/diagnostics/metrics-instrumentation) names to collect. | `string[]` | `[]` | `[ "MyApp.Orders" ]` |
+| `RecordExceptions` | Record [exceptions](https://opentelemetry.io/docs/specs/semconv/exceptions/) with stack traces on spans. | `bool` | `true` | `false` |
+| `ExcludedPaths` | Paths excluded from tracing (per-segment prefix match). | `string[]` | `[ "/health" ]` | `[ "/health", "/ready" ]` |
+| `IncludeScopes` | Include [log scopes](https://learn.microsoft.com/dotnet/core/extensions/logging#log-scopes) in exported records. | `bool` | `true` | `false` |
+| `IncludeFormattedMessage` | Include the formatted message in exported records. | `bool` | `true` | `false` |
+| `ConfigureTracing` | **Code only.** Register extra [tracing](https://opentelemetry.io/docs/concepts/signals/traces/) — see [Code configuration](#-code-configuration). | `Action<TracerProviderBuilder>` | `null` | `t => t.AddSource("MyApp")` |
+| `ConfigureMetrics` | **Code only.** Register extra [metrics](https://opentelemetry.io/docs/concepts/signals/metrics/). | `Action<MeterProviderBuilder>` | `null` | `m => m.AddMeter("MyApp")` |
+| `ConfigureLogging` | **Code only.** Tweak the [logging](https://learn.microsoft.com/dotnet/core/extensions/logging) pipeline. | `Action<ILoggingBuilder>` | `null` | `l => l.AddConsole()` |
 
-> `ConfigureTracing`, `ConfigureMetrics` and `ConfigureLogging` are code-only callbacks — see [Code configuration](#-code-configuration).
->
-> For every key with its default value, see the [Full configuration reference](#-full-configuration-reference) below.
+> 💡 See [`docs/appsettings.Example.json`](./docs/appsettings.Example.json)
+> for a complete profile with every key set to a realistic, non-default value.
 
 ### Custom section name
 
@@ -270,7 +278,9 @@ package is optional), you can add it as a custom key and read it in the callback
   "Telemetry": {
     "Endpoint": "http://localhost:4318",
     "ServiceName": "my-api",
-    "EnableSqlClientInstrumentation": true
+    "RecordExceptions": true,
+
+    "EnableSqlClientInstrumentation": true   // custom key
   }
 }
 ```
@@ -336,38 +346,6 @@ provider.Dispose();      // flushes traces, metrics and logs
 > ASP.NET Core instrumentation is only in the `net10.0` build. On the
 > `netstandard2.0` build (WPF/WinForms/console/UWP) it is simply absent —
 > setting `EnableAspNetCoreInstrumentation` there is a harmless no-op.
-
----
-
-## 📋 Full Configuration Reference
-
-Every key with its **default** value (only `Endpoint` is required to get started — telemetry is enabled by default):
-
-```jsonc
-{
-  "Telemetry": {
-    "Enabled": true,                           // master switch — set false to disable
-    "Endpoint": "http://localhost:4318",       // OTLP collector endpoint (required)
-    "Headers": "",                             // exporter headers: "key1=value1,key2=value2"
-    "Protocol": "HttpProtobuf",                // "HttpProtobuf" (4318) or "Grpc" (4317)
-    "ServiceName": null,                        // service name shown in the backend
-    "ResourceAttributes": {},                   // extra attributes, e.g. { "deployment.environment": "production" }
-    "AdditionalTracingSources": [],             // extra ActivitySource names, e.g. [ "Npgsql", "MyApp" ]
-    "AdditionalMeters": [],                     // extra Meter names, e.g. [ "MyApp.Orders" ]
-    "SampleRatio": 1.0,                         // 0.1 = 10% of traces, 1.0 = all
-    "EnableTracing": true,                      // distributed tracing
-    "EnableMetrics": true,                      // metrics collection
-    "EnableLogging": true,                      // log export via OTLP
-    "EnableAspNetCoreInstrumentation": true,    // incoming HTTP requests
-    "EnableHttpClientInstrumentation": true,    // outgoing HttpClient requests
-    "EnableRuntimeInstrumentation": true,       // GC, memory, thread pool metrics
-    "RecordExceptions": true,                   // exception stack traces on spans
-    "ExcludedPaths": [ "/health" ],             // paths excluded from tracing
-    "IncludeScopes": true,                      // log scopes in exported records
-    "IncludeFormattedMessage": true             // formatted message in exported records
-  }
-}
-```
 
 ---
 
@@ -480,25 +458,35 @@ The same telemetry explored in the OpenObserve UI:
 
 ---
 
-## 📚 References
-
-- **OpenTelemetry .NET** — [official docs](https://opentelemetry.io/docs/languages/net/)
-  · [GitHub](https://github.com/open-telemetry/opentelemetry-dotnet)
-- **.NET observability (Microsoft Learn)**
-  — [Metrics](https://learn.microsoft.com/dotnet/core/diagnostics/metrics)
-  · [Distributed tracing](https://learn.microsoft.com/dotnet/core/diagnostics/distributed-tracing)
-  · [Logging](https://learn.microsoft.com/dotnet/core/extensions/logging)
-- **APIs** — [`Meter`](https://learn.microsoft.com/dotnet/api/system.diagnostics.metrics.meter)
-  · [`ActivitySource`](https://learn.microsoft.com/dotnet/api/system.diagnostics.activitysource)
-- **OTLP exporter** — [configuration reference](https://opentelemetry.io/docs/languages/net/exporters/#otlp)
-  · [environment variables](https://opentelemetry.io/docs/specs/otel/configuration/sdk-environment-variables/)
-
----
-
 ## 🤝 Contributing
 
-See [CONTRIBUTING.md](./CONTRIBUTING.md).
+Contributions are welcome — bug fixes, new instrumentation options, documentation
+improvements and ideas alike. For anything beyond a small fix, please open an
+issue first so we can agree on the approach before you invest time in a pull
+request.
+
+The basic workflow is: fork the repo, branch off `main` (`feature/<name>` or
+`fix/<name>`), make your change, add or update tests for any public API change,
+run the unit tests, and open a PR against `main`. Build and test locally with:
+
+```bash
+dotnet build OpenTelemetryExtension.slnx -c Release
+dotnet test  src/OpenTelemetryExtension.Configuration.Tests -c Release
+```
+
+Full details — code style, the integration-test stack, and the release process —
+are in [CONTRIBUTING.md](./CONTRIBUTING.md). Note that versioning and release
+notes are handled separately at release time, so you don't need to touch them in
+a feature PR.
 
 ## 🐛 Report a Bug
 
-[Open an issue](https://github.com/thorstenalpers/OpenTelemetryExtension.Configuration/issues).
+Found something broken or behaving unexpectedly? Please
+[open an issue](https://github.com/thorstenalpers/OpenTelemetryExtension.Configuration/issues/new/choose).
+To help reproduce it quickly, include the package version, your target framework
+(e.g. `net10.0` or `netstandard2.0`), the relevant `Telemetry` configuration, the
+OTLP backend you export to, and what you expected to happen versus what actually
+did. A minimal repro or stack trace speeds things up a lot.
+
+For security-sensitive reports, please follow [SECURITY.md](./SECURITY.md)
+instead of opening a public issue.
