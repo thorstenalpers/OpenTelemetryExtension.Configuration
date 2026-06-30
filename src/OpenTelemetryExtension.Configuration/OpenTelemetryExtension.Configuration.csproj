@@ -2,7 +2,7 @@
 
 	<PropertyGroup>
 		<TargetFrameworks>netstandard2.0;net8.0;net10.0</TargetFrameworks>
-		<Version>2.1.1</Version>
+		<Version>2.1.2</Version>
 		<GeneratePackageOnBuild>false</GeneratePackageOnBuild>
 		<GenerateDocumentationFile>true</GenerateDocumentationFile>
 
@@ -28,14 +28,14 @@
 	<ItemGroup>
 		<PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.16.0" />
 		<PackageReference Include="OpenTelemetry.Extensions.Hosting" Version="1.16.0" />
-		<PackageReference Include="OpenTelemetry.Instrumentation.Http" Version="1.15.1" />
+		<PackageReference Include="OpenTelemetry.Instrumentation.Http" Version="1.16.0" />
 		<PackageReference Include="OpenTelemetry.Instrumentation.Runtime" Version="1.15.1" />
 	</ItemGroup>
 
 	<!-- ASP.NET Core instrumentation is only pulled in for web-capable targets,
 	     so non-web clients (WPF, console) using the netstandard2.0 build stay lean. -->
 	<ItemGroup Condition="'$(TargetFramework)' != 'netstandard2.0'">
-		<PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.15.2" />
+		<PackageReference Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.16.0" />
 	</ItemGroup>
 
 	<ItemGroup>
