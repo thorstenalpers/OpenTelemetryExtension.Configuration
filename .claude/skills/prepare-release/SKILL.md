@@ -21,8 +21,8 @@ This skill must only be run by the admin (auto-opening PRs is admin-only).
 1. **Check whether there is anything to release**
    - Run the helper: `bash .claude/skills/prepare-release/scripts/check-otel-updates.sh`
    - The helper only inspects the **shipped library project** (`src/OpenTelemetryExtension.Configuration/...csproj`). Dependency updates in the Sample or Tests projects are ignored — they are never published and must not trigger a new version.
-   - Exit code **3** = nothing to release (no library dependency updates *and* no new commits since the last tag) → **stop**.
-   - Exit code **0** = library dependency updates and/or new commits exist → continue.
+   - Exit code **3** = nothing to release (no library dependency updates *and* no new commits since the last tag) → **stop**. Update **nothing** in that case: outdated Sample or Tests packages alone never justify a release.
+   - Exit code **0** = library dependency updates and/or new commits exist → continue. Once a release *is* warranted, the update scope widens to every project (see step 6).
 
 2. **Determine current version & last tag**
    - Read `<Version>` in `src/OpenTelemetryExtension.Configuration/OpenTelemetryExtension.Configuration.csproj`.
@@ -38,7 +38,11 @@ This skill must only be run by the admin (auto-opening PRs is admin-only).
    `git checkout -b release/v<version>`. The repo uses GitHub Flow; release
    branches always cut from `main`.
 
-6. **Update the library project's NuGet packages** to latest (`src/OpenTelemetryExtension.Configuration/OpenTelemetryExtension.Configuration.csproj` only — leave Sample/Tests packages alone), then `dotnet restore OpenTelemetryExtension.slnx`.
+6. **Update every project's NuGet packages** to latest — library, Sample.WebApi,
+   Sample.Wpf, Tests and IntegrationTests — then `dotnet restore OpenTelemetryExtension.slnx`.
+   - `dotnet list OpenTelemetryExtension.slnx package --outdated` lists what to bump; afterwards it should come back empty.
+   - Keep trigger and scope apart: step 1 decides *whether* to release and looks at the shipped library only; this step decides *what* gets bumped and covers everything. Never bump anything when step 1 said there is nothing to release.
+   - Sample/Tests bumps carry the real build risk (EF Core, Swashbuckle, Test SDK). `TreatWarningsAsErrors=true` is repo-wide, so a new obsolete warning fails the build and must be fixed here, not worked around.
 
 7. **Build & test (green required)**
    - `dotnet build OpenTelemetryExtension.slnx -c Release`

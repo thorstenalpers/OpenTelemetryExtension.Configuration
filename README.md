@@ -8,6 +8,33 @@
 
 Drop-in OpenTelemetry setup for .NET — **tracing, metrics and logging** over OTLP, configured through code or configuration.
 
+```csharp
+builder.Services.AddTelemetry(builder.Configuration);
+```
+
+```json
+{ "Telemetry": { "Endpoint": "http://localhost:4318", "ServiceName": "my-api" } }
+```
+
+That's the whole setup — traces, metrics and logs are exported via OTLP.
+
+---
+
+## Contents
+
+- [Features](#-features)
+- [Requirements](#-requirements)
+- [Installation](#-installation)
+- [Quick Start](#-quick-start)
+- [Configuration](#️-configuration)
+- [Code Configuration](#-code-configuration)
+- [Using outside the Generic Host](#️-using-outside-the-generic-host)
+- [Samples](#-samples)
+- [Running Locally with a Backend](#-running-locally-with-a-backend)
+- [Sample Backend Configurations](#-sample-backend-configurations)
+- [Contributing](#-contributing)
+- [Report a Bug](#-report-a-bug)
+
 ---
 
 ## ✨ Features
@@ -22,9 +49,15 @@ Drop-in OpenTelemetry setup for .NET — **tracing, metrics and logging** over O
 
 ## ✅ Requirements
 
-- A .NET target compatible with **`netstandard2.0`** — i.e. .NET Framework 4.6.1+, .NET 6/8/9/10, or directly the **`net8.0`** / **`net10.0`** builds.
-- An **OTLP-compatible backend** to receive the telemetry (collector, Jaeger, OpenObserve, the .NET Aspire Dashboard, …). See [Running Locally with a Backend](#-running-locally-with-a-backend).
-- ASP.NET Core instrumentation requires a modern .NET target (**`net8.0`** or **`net10.0`** build); it is not included in the `netstandard2.0` build used by WPF/console apps.
+The package ships three targets — `netstandard2.0`, `net8.0` and `net10.0` — and NuGet picks the best match automatically:
+
+| Your target | Build you get | ASP.NET Core instrumentation |
+|---|---|---|
+| .NET 10 | `net10.0` | ✅ |
+| .NET 8 / .NET 9 | `net8.0` | ✅ |
+| .NET 6, .NET Framework 4.6.1+ | `netstandard2.0` | ❌ *(not referenced — keeps WPF/console apps lean)* |
+
+You also need an **OTLP-compatible backend** to receive the telemetry (collector, Jaeger, OpenObserve, SigNoz, the .NET Aspire Dashboard, …). See [Running Locally with a Backend](#-running-locally-with-a-backend).
 
 ---
 
@@ -107,7 +140,7 @@ the same properties in the `AddTelemetry(o => …)` callback.
 | `EnableMetrics` | [Metrics](https://opentelemetry.io/docs/concepts/signals/metrics/) collection. | `bool` | `true` | `false` |
 | `EnableLogging` | [Log](https://opentelemetry.io/docs/concepts/signals/logs/) export via OTLP. | `bool` | `true` | `false` |
 | `SampleRatio` | Trace [sample](https://opentelemetry.io/docs/concepts/sampling/) fraction — `1.0` = all, `0.1` = 10% (`ParentBased(TraceIdRatioBased)`). | `double` | `1.0` | `0.1` |
-| `EnableAspNetCoreInstrumentation` | Incoming [ASP.NET Core](https://www.nuget.org/packages/OpenTelemetry.Instrumentation.AspNetCore) requests *(net10.0 only; no-op on netstandard2.0)*. | `bool` | `true` | `false` |
+| `EnableAspNetCoreInstrumentation` | Incoming [ASP.NET Core](https://www.nuget.org/packages/OpenTelemetry.Instrumentation.AspNetCore) requests *(net8.0/net10.0 builds; no-op on netstandard2.0)*. | `bool` | `true` | `false` |
 | `EnableHttpClientInstrumentation` | Outgoing [`HttpClient`](https://www.nuget.org/packages/OpenTelemetry.Instrumentation.Http) requests. | `bool` | `true` | `false` |
 | `EnableRuntimeInstrumentation` | [.NET runtime metrics](https://www.nuget.org/packages/OpenTelemetry.Instrumentation.Runtime) (GC, memory, thread pool). | `bool` | `true` | `false` |
 | `AdditionalTracingSources` | Extra [`ActivitySource`](https://learn.microsoft.com/dotnet/core/diagnostics/distributed-tracing-instrumentation-walkthroughs) names to collect. | `string[]` | `[]` | `[ "Npgsql", "MyApp" ]` |
@@ -122,6 +155,17 @@ the same properties in the `AddTelemetry(o => …)` callback.
 
 > 💡 See [`docs/appsettings.Example.json`](./docs/appsettings.Example.json)
 > for a complete profile with every key set to a realistic, non-default value.
+
+**Endpoint & protocol** — give `Endpoint` the *base* URL, not a signal path:
+
+- `HttpProtobuf` (default, port `4318`) — the per-signal path (`/v1/traces`,
+  `/v1/metrics`, `/v1/logs`) is appended for you.
+- `Grpc` (port `4317`) — every signal goes to the base endpoint as-is.
+
+`Endpoint` is validated at registration and `AddTelemetry()` throws when it is
+missing. The one exception is `Enabled: false`: validation is skipped, nothing is
+registered, and the call becomes a no-op — so you can switch telemetry off in an
+environment without also having to supply an endpoint.
 
 ### Custom section name
 
@@ -179,8 +223,9 @@ builder.Services.AddTelemetry(builder.Configuration, o =>
 ### The `Configure*` hooks — Sources & Meters
 
 The three callbacks are the extension points for **your own** telemetry. The
-built-in instrumentation (ASP.NET Core, `HttpClient`, SQL, runtime) is wired up
-automatically; these hooks let you add the signals your application emits itself.
+built-in instrumentation (ASP.NET Core, `HttpClient`, .NET runtime) is wired up
+automatically; these hooks let you add the signals your application emits itself,
+plus anything that needs an extra NuGet package — such as [databases](#databases).
 
 | Hook | Builder | Used to register |
 |---|---|---|
@@ -231,26 +276,27 @@ Database instrumentation is **not** built in — it depends entirely on your
 driver, so it is added through the `ConfigureTracing` hook. This keeps the
 package free of database-specific dependencies; you only pull in what you use.
 
+There are two kinds of database instrumentation:
+
+| Kind | Examples | How to enable |
+|---|---|---|
+| **Package-based** — ships an `Add…Instrumentation()` extension | SQL Server (`OpenTelemetry.Instrumentation.SqlClient`), EF Core (`OpenTelemetry.Instrumentation.EntityFrameworkCore`) | install the package + call it in `ConfigureTracing` |
+| **Source-based** — the driver already emits an `ActivitySource` | Npgsql (`Npgsql`), MySqlConnector (`MySqlConnector`), Oracle (`Oracle.ManagedDataAccess.Core`) | register the source name — code *or* config, no extra package |
+
+`ConfigureTracing` is a single delegate, so chain everything in one assignment:
+
 ```csharp
-// SQL Server — install the package, then register it:
-//   dotnet add package OpenTelemetry.Instrumentation.SqlClient
-o.ConfigureTracing = t => t.AddSqlClientInstrumentation();
-
-// EF Core — dedicated instrumentation package:
-//   dotnet add package OpenTelemetry.Instrumentation.EntityFrameworkCore
-o.ConfigureTracing = t => t.AddEntityFrameworkCoreInstrumentation();
-
-// Drivers with a built-in ActivitySource — just register its name:
-o.ConfigureTracing = t => t.AddSource("Npgsql");          // PostgreSQL (Npgsql)
-o.ConfigureTracing = t => t.AddSource("MySqlConnector");  // MySQL (MySqlConnector)
+// dotnet add package OpenTelemetry.Instrumentation.SqlClient
+// dotnet add package OpenTelemetry.Instrumentation.EntityFrameworkCore
+o.ConfigureTracing = t => t
+    .AddSqlClientInstrumentation()
+    .AddEntityFrameworkCoreInstrumentation()
+    .AddSource("Npgsql")            // PostgreSQL
+    .AddSource("MySqlConnector");   // MySQL
 ```
 
-Oracle (`Oracle.ManagedDataAccess.Core`) emits an `ActivitySource` in recent
-versions and is wired up the same way via `AddSource(...)`.
-
-**No code for source-based drivers:** if the driver only needs an `ActivitySource`
-name (Npgsql, MySqlConnector, Oracle, your own app sources), you can enable it
-purely from `appsettings.json` — no `ConfigureTracing` call required:
+**No code for source-based drivers:** the second row of the table above needs no
+C# at all — `AdditionalTracingSources` does the same job from `appsettings.json`:
 
 ```json
 {
@@ -293,17 +339,8 @@ builder.Services.AddTelemetry(builder.Configuration, opt =>
     {
         if (builder.Configuration.GetValue<bool>("Telemetry:EnableSqlClientInstrumentation"))
         {
-            // Microsoft SQL Server / System.Data.SqlClient
             // NuGet: OpenTelemetry.Instrumentation.SqlClient
             tracing.AddSqlClientInstrumentation(sql => sql.RecordException = opt.RecordExceptions);
-
-            // PostgreSQL (Npgsql)
-            // NuGet: OpenTelemetry.Instrumentation.Npgsql
-            tracing.AddNpgsql();
-
-            // MySQL (MySqlConnector)
-            // NuGet: OpenTelemetry.Instrumentation.MySqlData
-            tracing.AddMySqlDataInstrumentation();
         }
     });
 ```
@@ -343,8 +380,8 @@ var provider = services.BuildServiceProvider();
 provider.Dispose();      // flushes traces, metrics and logs
 ```
 
-> ASP.NET Core instrumentation is only in the `net10.0` build. On the
-> `netstandard2.0` build (WPF/WinForms/console/UWP) it is simply absent —
+> ASP.NET Core instrumentation is in the `net8.0` and `net10.0` builds only. On
+> the `netstandard2.0` build (WPF/WinForms/console/UWP) it is simply absent —
 > setting `EnableAspNetCoreInstrumentation` there is a harmless no-op.
 
 ---
@@ -391,9 +428,16 @@ documented in full; more start scripts live in [`infrastructure/`](./infrastruct
 
 | Backend | Start infrastructure | Launch profile | Backend UI |
 |---|---|---|---|
-| .NET Aspire Dashboard | `infrastructure/docker/docker-install-aspire-dashboard.cmd` *(or Helm: `helm/helm-install-aspire-dashboard.cmd`)* | `Start Aspire` | <http://localhost:31888> |
-| Jaeger | `infrastructure/docker/docker-install-jaeger.cmd` | `Start Jaeger` | <http://localhost:16686> |
-| OpenObserve | `infrastructure/helm/helm-install-openobserve.cmd` | `Start OpenObserve Http` / `Start OpenObserve Grpc` | <http://localhost:30117> (`admin@web.de`/`admin`) |
+| .NET Aspire Dashboard | `docker/docker-install-aspire-dashboard.cmd` *(or `helm/helm-install-aspire-dashboard.cmd`)* | `Start Aspire` | <http://localhost:31888> |
+| Jaeger | `docker/docker-install-jaeger.cmd` | `Start Jaeger` | <http://localhost:16686> |
+| OpenObserve | `helm/helm-install-openobserve.cmd` *(or `docker/docker-install-openobserve.cmd`)* | `Start OpenObserve Http` / `Start OpenObserve Grpc` | <http://localhost:30117> (`admin@web.de`/`admin`) |
+| SigNoz | `helm/helm-install-signoz.cmd` | `Start SigNoz` | <http://localhost:30111> (`admin@web.de`) |
+| Grafana / Loki | `docker/docker-install-loki.cmd` | `Start Loki` | <http://localhost:3000> (`admin`/`admin`) |
+| OpenSearch Dashboards | `docker/docker-install-opensearch.cmd` | `Start OpenSearch` | <http://localhost:5601> |
+
+*(Paths are relative to [`infrastructure/`](./infrastructure). The first three are
+documented in full below; the rest work the same way — start the script, pick the
+profile.)*
 
 > **Tip — viewing logs in the Aspire Dashboard:** after starting the app with the
 > `Start Aspire` profile, open <http://localhost:31888>, then go to the
