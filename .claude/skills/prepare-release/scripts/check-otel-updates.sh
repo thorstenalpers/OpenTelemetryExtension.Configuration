@@ -6,6 +6,9 @@
 # breaking changes). Only the library project's packages matter — updates in the
 # Sample or Tests projects are never published and must not drive a release.
 #
+# This decides the *trigger*, not the update *scope*: once a release is
+# warranted, SKILL.md step 6 bumps the packages of every project in the solution.
+#
 # Exit 0 = something to release, 3 = nothing to release, 1 = error.
 set -euo pipefail
 

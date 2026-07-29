@@ -24,6 +24,7 @@
     <File Path="release-notes/v2.1.0.md" />
     <File Path="release-notes/v2.1.1.md" />
     <File Path="release-notes/v2.1.2.md" />
+    <File Path="release-notes/v2.1.3.md" />
   </Folder>
   <Folder Name="/.github/workflows/">
     <File Path=".github/workflows/ci.yml" />
