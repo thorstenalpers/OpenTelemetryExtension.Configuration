@@ -13,7 +13,12 @@ builder.Services.AddTelemetry(builder.Configuration);
 ```
 
 ```json
-{ "Telemetry": { "Endpoint": "http://localhost:4318", "ServiceName": "my-api" } }
+{
+  "Telemetry": {
+    "Endpoint": "http://localhost:4318",
+    "ServiceName": "my-api"
+  }
+}
 ```
 
 That's the whole setup — traces, metrics and logs are exported via OTLP.
@@ -49,13 +54,26 @@ That's the whole setup — traces, metrics and logs are exported via OTLP.
 
 ## ✅ Requirements
 
-The package ships three targets — `netstandard2.0`, `net8.0` and `net10.0` — and NuGet picks the best match automatically:
+**Every app type works** — ASP.NET Core, WPF, WinForms, console, worker services,
+MAUI/WinUI, UWP. The package ships three targets and NuGet picks the best match
+for your **target framework**; the app type plays no role:
 
-| Your target | Build you get | ASP.NET Core instrumentation |
+| Your target framework | Build you get | Bundles ASP.NET Core instrumentation |
 |---|---|---|
-| .NET 10 | `net10.0` | ✅ |
-| .NET 8 / .NET 9 | `net8.0` | ✅ |
-| .NET 6, .NET Framework 4.6.1+ | `netstandard2.0` | ❌ *(not referenced — keeps WPF/console apps lean)* |
+| `net10.0` — including `net10.0-windows` (WPF/WinForms) | `net10.0` | ✅ |
+| `net8.0`, `net9.0` — including their `-windows` variants | `net8.0` | ✅ |
+| .NET Framework 4.6.1+, .NET Standard 2.0 consumers | `netstandard2.0` | ❌ |
+
+The last column is only about the optional
+[ASP.NET Core instrumentation](https://www.nuget.org/packages/OpenTelemetry.Instrumentation.AspNetCore)
+dependency, which traces *incoming HTTP requests* and is therefore meaningless
+outside a web app. It is left out of the `netstandard2.0` build so .NET Framework
+clients don't drag in an ASP.NET Core dependency they can't use. Everything else
+— OTLP export, tracing, metrics, logging, `HttpClient` and runtime
+instrumentation — is identical in all three builds.
+
+> A WPF app on `net10.0-windows` therefore gets the full `net10.0` build. Only
+> WPF on **.NET Framework** falls back to `netstandard2.0`.
 
 You also need an **OTLP-compatible backend** to receive the telemetry (collector, Jaeger, OpenObserve, SigNoz, the .NET Aspire Dashboard, …). See [Running Locally with a Backend](#-running-locally-with-a-backend).
 
@@ -380,9 +398,11 @@ var provider = services.BuildServiceProvider();
 provider.Dispose();      // flushes traces, metrics and logs
 ```
 
-> ASP.NET Core instrumentation is in the `net8.0` and `net10.0` builds only. On
-> the `netstandard2.0` build (WPF/WinForms/console/UWP) it is simply absent —
-> setting `EnableAspNetCoreInstrumentation` there is a harmless no-op.
+> ASP.NET Core instrumentation is in the `net8.0` and `net10.0` builds only —
+> which a desktop or console app targeting `net8.0`/`net10.0` (or their
+> `-windows` variants) does get. Only on the `netstandard2.0` build (.NET
+> Framework) is it absent, and setting `EnableAspNetCoreInstrumentation` there is
+> a harmless no-op. See [Requirements](#-requirements).
 
 ---
 
