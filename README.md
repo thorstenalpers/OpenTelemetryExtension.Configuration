@@ -6,7 +6,7 @@
 [![Downloads](https://img.shields.io/nuget/dt/OpenTelemetryExtension.Configuration?style=flat-square&logo=nuget&logoColor=white&label=downloads)](https://www.nuget.org/packages/OpenTelemetryExtension.Configuration)
 [![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](./LICENSE)
 
-Drop-in OpenTelemetry setup for .NET — **tracing, metrics and logging** over OTLP, configured through code or configuration.
+Configurable OpenTelemetry setup for .NET via NuGet — OTLP traces, metrics, and logs.
 
 ```csharp
 builder.Services.AddTelemetry(builder.Configuration);
