@@ -6,7 +6,7 @@
 [![Downloads](https://img.shields.io/nuget/dt/OpenTelemetryExtension.Configuration?style=flat-square&logo=nuget&logoColor=white&label=downloads)](https://www.nuget.org/packages/OpenTelemetryExtension.Configuration)
 [![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](./LICENSE)
 
-Drop-in OpenTelemetry setup for .NET — **tracing, metrics and logging** over OTLP, configured through code or configuration.
+Configurable OpenTelemetry setup for .NET via NuGet — OTLP traces, metrics, and logs.
 
 ```csharp
 builder.Services.AddTelemetry(builder.Configuration);
@@ -27,18 +27,21 @@ That's the whole setup — traces, metrics and logs are exported via OTLP.
 
 ## Contents
 
-- [Features](#-features)
-- [Requirements](#-requirements)
-- [Installation](#-installation)
-- [Quick Start](#-quick-start)
-- [Configuration](#️-configuration)
-- [Code Configuration](#-code-configuration)
-- [Using outside the Generic Host](#️-using-outside-the-generic-host)
-- [Samples](#-samples)
-- [Running Locally with a Backend](#-running-locally-with-a-backend)
-- [Sample Backend Configurations](#-sample-backend-configurations)
-- [Contributing](#-contributing)
-- [Report a Bug](#-report-a-bug)
+- [✨ Features](#-features)
+- **Getting started**
+  - [✅ Requirements](#-requirements)
+  - [📦 Installation](#-installation) · [Other ways to consume it](#other-ways-to-consume-it)
+  - [🚀 Quick Start](#-quick-start)
+- **Configuring telemetry**
+  - [⚙️ Configuration](#️-configuration) · [Options reference](#options-reference) · [Endpoint & protocol](#endpoint--protocol) · [Custom section name](#custom-section-name)
+  - [🧩 Code Configuration](#-code-configuration) · [Registering your own Sources & Meters](#registering-your-own-sources--meters) · [Databases](#databases)
+  - [🖥️ Using outside the Generic Host](#️-using-outside-the-generic-host)
+- **Trying it out**
+  - [🧪 Samples](#-samples)
+  - [🔌 Running Locally with a Backend](#-running-locally-with-a-backend) · [Backend overview](#backend-overview) · [Sample backend configurations](#sample-backend-configurations)
+- **Project**
+  - [🤝 Contributing](#-contributing)
+  - [🐛 Report a Bug](#-report-a-bug)
 
 ---
 
@@ -50,7 +53,6 @@ That's the whole setup — traces, metrics and logs are exported via OTLP.
 - **Extensible** — add your own sources, meters and databases when you need them
 
 ---
-
 
 ## ✅ Requirements
 
@@ -146,6 +148,8 @@ All keys live under the **`Telemetry`** section. Only `Endpoint` is required; ev
 else has a default and telemetry is on out of the box. Bind from `appsettings.json` or set
 the same properties in the `AddTelemetry(o => …)` callback.
 
+### Options reference
+
 | Key | Description | Type | Default | Example |
 |---|---|---|---|---|
 | `Endpoint` | [OTLP](https://opentelemetry.io/docs/languages/net/exporters/) endpoint for traces, metrics and logs. | `Uri` | — *(required)* | `https://otel.example.com:4317` |
@@ -174,7 +178,9 @@ the same properties in the `AddTelemetry(o => …)` callback.
 > 💡 See [`docs/appsettings.Example.json`](./docs/appsettings.Example.json)
 > for a complete profile with every key set to a realistic, non-default value.
 
-**Endpoint & protocol** — give `Endpoint` the *base* URL, not a signal path:
+### Endpoint & protocol
+
+Give `Endpoint` the *base* URL, not a signal path:
 
 - `HttpProtobuf` (default, port `4318`) — the per-signal path (`/v1/traces`,
   `/v1/metrics`, `/v1/logs`) is appended for you.
@@ -238,12 +244,13 @@ builder.Services.AddTelemetry(builder.Configuration, o =>
 });
 ```
 
-### The `Configure*` hooks — Sources & Meters
+### Registering your own Sources & Meters
 
-The three callbacks are the extension points for **your own** telemetry. The
-built-in instrumentation (ASP.NET Core, `HttpClient`, .NET runtime) is wired up
-automatically; these hooks let you add the signals your application emits itself,
-plus anything that needs an extra NuGet package — such as [databases](#databases).
+The three `Configure*` callbacks are the extension points for **your own**
+telemetry. The built-in instrumentation (ASP.NET Core, `HttpClient`, .NET
+runtime) is wired up automatically; these hooks let you add the signals your
+application emits itself, plus anything that needs an extra NuGet package — such
+as [databases](#databases).
 
 | Hook | Builder | Used to register |
 |---|---|---|
@@ -423,8 +430,7 @@ to `http://localhost:4318` by default — point it at any of the backends here.
 ## 🔌 Running Locally with a Backend
 
 The [Web API sample](./src/OpenTelemetryExtension.Configuration.Sample.WebApi) ships
-ready-to-run configurations for several popular backends (the three below are
-documented in full; more start scripts live in [`infrastructure/`](./infrastructure)). Each backend has:
+ready-to-run configurations for several popular backends. Each backend has:
 
 1. an **infrastructure start script** (Docker Compose or Helm) in [`infrastructure/`](./infrastructure),
 2. a **launch profile** that selects the matching `appsettings.<env>.json`,
@@ -464,13 +470,11 @@ profile.)*
 > **Structured** (logs), **Traces** or **Metrics** tab. Data appears as soon as
 > you hit a Swagger endpoint.
 
----
-
-## 📝 Sample Backend Configurations
+### Sample backend configurations
 
 These are the exact `appsettings.<env>.json` files used by the sample's launch profiles.
 
-### .NET Aspire Dashboard — `appsettings.aspire.json`
+#### .NET Aspire Dashboard — `appsettings.aspire.json`
 
 The dashboard requires an API key on the OTLP endpoint (`x-otlp-api-key`). The
 gRPC endpoint is exposed on NodePort `31889` (Helm) or host port `31889` (Docker).
@@ -489,7 +493,7 @@ Traces, metrics and logs from the sample app shown live in the Aspire Dashboard 
 
 ![Aspire Dashboard demo](https://raw.githubusercontent.com/thorstenalpers/OpenTelemetryExtension.Configuration/main/assets/Aspire-Dashboard.webp)
 
-### Jaeger — `appsettings.jaeger.json`
+#### Jaeger — `appsettings.jaeger.json`
 
 ```json
 {
@@ -504,7 +508,7 @@ Traces from the sample app shown in the Jaeger UI:
 
 ![Jaeger demo](https://raw.githubusercontent.com/thorstenalpers/OpenTelemetryExtension.Configuration/main/assets/Jaeger.webp)
 
-### OpenObserve — HTTP/protobuf — `appsettings.openobserve-http.json`
+#### OpenObserve — HTTP/protobuf — `appsettings.openobserve-http.json`
 
 ```json
 {
@@ -542,6 +546,8 @@ Full details — code style, the integration-test stack, and the release process
 are in [CONTRIBUTING.md](./CONTRIBUTING.md). Note that versioning and release
 notes are handled separately at release time, so you don't need to touch them in
 a feature PR.
+
+---
 
 ## 🐛 Report a Bug
 

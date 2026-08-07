@@ -98,3 +98,6 @@ yarn-error.log*
 
 # OpenObserve docker runtime data
 infrastructure/docker/openobserve-data/
+.claude/worktrees/
+*.local.bat
+*.local.cmd
