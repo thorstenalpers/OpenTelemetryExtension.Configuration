@@ -61,6 +61,20 @@ jobs:
             -reporttypes:"Html;lcov;Cobertura"
 
       - name: Upload Coverage to Coveralls
+        id: coveralls
+        uses: coverallsapp/github-action@v2
+        # Transient coveralls.io 5xx errors happen; the retry below still fails the build if it persists.
+        continue-on-error: true
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path-to-lcov: TestResults/Reports/lcov.info
+
+      - name: Wait before Coveralls retry
+        if: steps.coveralls.outcome == 'failure'
+        run: Start-Sleep -Seconds 60
+
+      - name: Upload Coverage to Coveralls (retry)
+        if: steps.coveralls.outcome == 'failure'
         uses: coverallsapp/github-action@v2
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
