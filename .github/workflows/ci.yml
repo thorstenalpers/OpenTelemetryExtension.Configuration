@@ -62,7 +62,7 @@ jobs:
 
       - name: Upload Coverage to Coveralls
         id: coveralls
-        uses: coverallsapp/github-action@v2
+        uses: coverallsapp/github-action@8d6379e14d29928660c4ba802d8e85393440b329 # v2.3.8
         # Transient coveralls.io 5xx errors happen; the retry below still fails the build if it persists.
         continue-on-error: true
         with:
@@ -75,7 +75,7 @@ jobs:
 
       - name: Upload Coverage to Coveralls (retry)
         if: steps.coveralls.outcome == 'failure'
-        uses: coverallsapp/github-action@v2
+        uses: coverallsapp/github-action@8d6379e14d29928660c4ba802d8e85393440b329 # v2.3.8
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           path-to-lcov: TestResults/Reports/lcov.info
