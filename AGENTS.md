@@ -22,6 +22,7 @@ infrastructure/helm/                             # Helm charts + install scripts
 .github/workflows/
   ci.yml                                         # Build + unit tests (Category=Unit) + coverage → Coveralls
   deploy-nuget.yml                               # Manual NuGet publish + git tag + GitHub Release
+docs/README.nuget.md                             # Short README packed into the NuGet package (nuget.org renders no <details>)
 release-notes/                                   # v{VERSION}.md per release
 OpenTelemetryExtension.slnx                      # Solution file (repo root)
 ```
@@ -240,6 +241,7 @@ API to confirm the data was ingested.
 4. Add enabled/disabled unit tests in
    `TelemetryServiceCollectionExtensionsTests.cs`
 5. Add the option to the `<example>` block in the XML doc on `TelemetryOptions`
-6. Update `README.md` configuration reference table
+6. Update `README.md` configuration reference table (`docs/README.nuget.md`
+   only links to it)
 7. Run the unit tests; when the telemetry stack is running, run the integration
    tests too (see [Integration tests](#integration-tests))
