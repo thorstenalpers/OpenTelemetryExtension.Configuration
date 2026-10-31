@@ -33,6 +33,10 @@
     <File Path=".github/workflows/ci.yml" />
     <File Path=".github/workflows/deploy-nuget.yml" />
   </Folder>
+  <Folder Name="/docs/">
+    <File Path="docs/README.nuget.md" />
+    <File Path="docs/appsettings.Example.json" />
+  </Folder>
   <Folder Name="/Infrastructure/" />
   <Folder Name="/Infrastructure/Docker/">
     <File Path="infrastructure/docker/docker-compose.aspire-dashboard.yml" />
