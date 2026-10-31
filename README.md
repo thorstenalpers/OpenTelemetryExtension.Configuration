@@ -6,7 +6,14 @@
 [![Downloads](https://img.shields.io/nuget/dt/OpenTelemetryExtension.Configuration?style=flat-square&logo=nuget&logoColor=white&label=downloads)](https://www.nuget.org/packages/OpenTelemetryExtension.Configuration)
 [![License](https://img.shields.io/badge/license-MIT-blue?style=flat-square)](./LICENSE)
 
-Configurable OpenTelemetry setup for .NET via NuGet — OTLP traces, metrics, and logs.
+**Production-ready OpenTelemetry for .NET in one line.** Traces, metrics and logs
+are exported over OTLP to Jaeger, Grafana, SigNoz, OpenObserve, the .NET Aspire
+Dashboard or any other OpenTelemetry backend — configured from
+`appsettings.json`, with sensible defaults and no boilerplate.
+
+```bash
+dotnet add package OpenTelemetryExtension.Configuration
+```
 
 ```csharp
 builder.Services.AddTelemetry(builder.Configuration);
@@ -21,13 +28,18 @@ builder.Services.AddTelemetry(builder.Configuration);
 }
 ```
 
-That's the whole setup — traces, metrics and logs are exported via OTLP.
+That's the whole setup. Incoming requests, outgoing `HttpClient` calls, .NET
+runtime metrics and every `ILogger` message now show up in your backend.
+
+![Traces, metrics and logs from the sample app in the .NET Aspire Dashboard](https://raw.githubusercontent.com/thorstenalpers/OpenTelemetryExtension.Configuration/main/assets/Aspire-Dashboard.webp)
 
 ---
 
 ## Contents
 
+- [🤔 Why this package?](#-why-this-package)
 - [✨ Features](#-features)
+- [🔭 Works with your backend](#-works-with-your-backend)
 - **Getting started**
   - [✅ Requirements](#-requirements)
   - [📦 Installation](#-installation) · [Other ways to consume it](#other-ways-to-consume-it)
@@ -38,19 +50,98 @@ That's the whole setup — traces, metrics and logs are exported via OTLP.
   - [🖥️ Using outside the Generic Host](#️-using-outside-the-generic-host)
 - **Trying it out**
   - [🧪 Samples](#-samples)
-  - [🔌 Running Locally with a Backend](#-running-locally-with-a-backend) · [Backend overview](#backend-overview) · [Sample backend configurations](#sample-backend-configurations)
+  - [🔌 Running Locally with a Backend](#-running-locally-with-a-backend) · [Sample backend configurations](#sample-backend-configurations)
 - **Project**
+  - [❓ FAQ](#-faq)
   - [🤝 Contributing](#-contributing)
   - [🐛 Report a Bug](#-report-a-bug)
+  - [📄 License](#-license)
+
+---
+
+## 🤔 Why this package?
+
+OpenTelemetry for .NET is powerful, but wiring it up by hand means five NuGet
+packages to keep in sync and a block of setup code that gets copied from
+service to service — and drifts. This is roughly what `AddTelemetry()` replaces:
+
+```csharp
+// Without this package
+var endpoint = new Uri(builder.Configuration["Otlp:Endpoint"]!);
+
+builder.Services.AddOpenTelemetry()
+    .ConfigureResource(r => r.AddService("my-api"))
+    .WithTracing(t => t
+        .SetSampler(new ParentBasedSampler(new TraceIdRatioBasedSampler(1.0)))
+        .AddAspNetCoreInstrumentation(o =>
+        {
+            o.RecordException = true;
+            o.Filter = ctx => !ctx.Request.Path.StartsWithSegments("/health");
+        })
+        .AddHttpClientInstrumentation(o => o.RecordException = true)
+        .AddOtlpExporter(o => o.Endpoint = new Uri(endpoint, "v1/traces")))
+    .WithMetrics(m => m
+        .AddAspNetCoreInstrumentation()
+        .AddHttpClientInstrumentation()
+        .AddRuntimeInstrumentation()
+        .AddOtlpExporter(o => o.Endpoint = new Uri(endpoint, "v1/metrics")));
+
+builder.Logging.AddOpenTelemetry(l =>
+{
+    l.IncludeScopes = true;
+    l.IncludeFormattedMessage = true;
+    l.AddOtlpExporter(o => o.Endpoint = new Uri(endpoint, "v1/logs"));
+});
+```
+
+```csharp
+// With this package
+builder.Services.AddTelemetry(builder.Configuration);
+```
+
+Everything in the first block is still there — it is just driven by
+configuration. Switching from Jaeger to SigNoz, changing the sample rate,
+adding an auth header or turning telemetry off in one environment is a config
+change, not a code change.
 
 ---
 
 ## ✨ Features
 
-- **One-call setup** — tracing, metrics and logging via a single `AddTelemetry()`, from `appsettings.json` or code
-- **Works on any .NET** — ASP.NET Core, WPF, console and more, exporting over OTLP to any compatible backend
-- **Auto-instrumentation** — `HttpClient`, ASP.NET Core and .NET runtime traced and measured automatically, each toggleable
-- **Extensible** — add your own sources, meters and databases when you need them
+- 🚀 **One-call setup** — tracing, metrics and logging via a single `AddTelemetry()`.
+- ⚙️ **Configuration-driven** — every option bindable from `appsettings.json`,
+  environment variables or any other `IConfiguration` source; override in code when you need to.
+- 🔋 **Batteries included** — ASP.NET Core, `HttpClient` and .NET runtime
+  instrumentation out of the box, each individually toggleable.
+- 🛡️ **Sensible defaults** — parent-based sampling, exceptions recorded on spans,
+  `/health` excluded from tracing, endpoint validated at startup.
+- 🌍 **Runs everywhere** — ASP.NET Core, worker services, console, WPF, WinForms,
+  MAUI, and even .NET Framework via `netstandard2.0`.
+- 🔌 **Any OTLP backend** — HTTP/protobuf or gRPC, with custom headers for auth.
+- 🧩 **Extensible** — add your own `ActivitySource`s, `Meter`s and database
+  instrumentation from config or code.
+- 🪶 **No lock-in** — it is plain OpenTelemetry underneath, the whole library is
+  two source files, and you can drop it at any time.
+
+---
+
+## 🔭 Works with your backend
+
+Anything that speaks [OTLP](https://opentelemetry.io/docs/specs/otlp/) works.
+These backends ship with a ready-to-run start script and launch profile in this
+repository — see [Running Locally with a Backend](#-running-locally-with-a-backend):
+
+| Backend | Protocol used in the sample |
+|---|---|
+| [.NET Aspire Dashboard](https://aspire.dev/dashboard/standalone/) | gRPC + API key |
+| [Jaeger](https://www.jaegertracing.io/) | gRPC |
+| [OpenObserve](https://openobserve.ai/) | HTTP/protobuf or gRPC |
+| [SigNoz](https://signoz.io/) | HTTP/protobuf |
+| [Grafana](https://grafana.com/) / [Loki](https://grafana.com/oss/loki/) | HTTP/protobuf |
+| [OpenSearch Dashboards](https://opensearch.org/) | HTTP/protobuf |
+
+Using a hosted service (Grafana Cloud, Honeycomb, New Relic, Elastic, Datadog, …)?
+Point `Endpoint` at its OTLP ingest URL and put the API key in `Headers`.
 
 ---
 
@@ -67,17 +158,18 @@ for your **target framework**; the app type plays no role:
 | .NET Framework 4.6.1+, .NET Standard 2.0 consumers | `netstandard2.0` | ❌ |
 
 The last column is only about the optional
-[ASP.NET Core instrumentation](https://www.nuget.org/packages/OpenTelemetry.Instrumentation.AspNetCore)
-dependency, which traces *incoming HTTP requests* and is therefore meaningless
-outside a web app. It is left out of the `netstandard2.0` build so .NET Framework
-clients don't drag in an ASP.NET Core dependency they can't use. Everything else
-— OTLP export, tracing, metrics, logging, `HttpClient` and runtime
-instrumentation — is identical in all three builds.
+[ASP.NET Core instrumentation](https://www.nuget.org/packages/OpenTelemetry.Instrumentation.AspNetCore),
+which traces *incoming HTTP requests* and is therefore meaningless outside a web
+app. It is left out of the `netstandard2.0` build so .NET Framework clients don't
+drag in an ASP.NET Core dependency they can't use. Everything else — OTLP export,
+tracing, metrics, logging, `HttpClient` and runtime instrumentation — is
+identical in all three builds.
 
 > A WPF app on `net10.0-windows` therefore gets the full `net10.0` build. Only
 > WPF on **.NET Framework** falls back to `netstandard2.0`.
 
-You also need an **OTLP-compatible backend** to receive the telemetry (collector, Jaeger, OpenObserve, SigNoz, the .NET Aspire Dashboard, …). See [Running Locally with a Backend](#-running-locally-with-a-backend).
+You also need an **OTLP-compatible backend** to receive the telemetry — see
+[Works with your backend](#-works-with-your-backend).
 
 ---
 
@@ -95,21 +187,18 @@ The NuGet package is the recommended path, but it isn't the only one:
   files. Either clone
   [`OpenTelemetryExtension.Configuration`](./src/OpenTelemetryExtension.Configuration)
   into your repository and add a `<ProjectReference>` to it, or drop the two files
-  straight into your project (no package, no reference) and own them outright:
+  straight into your project and own them outright:
   [`TelemetryServiceCollectionExtensions.cs`](./src/OpenTelemetryExtension.Configuration/TelemetryServiceCollectionExtensions.cs)
   and
   [`TelemetryOptions.cs`](./src/OpenTelemetryExtension.Configuration/TelemetryOptions.cs).
-  Handy when you want to tweak the defaults or step through the setup code.
-- **As a git submodule** — pin the source at a specific commit and reference the
-  project from your solution:
+- **As a git submodule** — pin the source at a specific commit:
   ```bash
   git submodule add https://github.com/thorstenalpers/OpenTelemetryExtension.Configuration.git external/OpenTelemetryExtension.Configuration
   ```
   then add a `<ProjectReference>` to
   `external/OpenTelemetryExtension.Configuration/src/OpenTelemetryExtension.Configuration/OpenTelemetryExtension.Configuration.csproj`.
-- **As a fork** — fork the repository and adapt it to your needs. Optionally, if
-  your changes are generally useful, open a pull request back upstream. See
-  [Contributing](#-contributing).
+- **As a fork** — adapt it to your needs, and open a pull request back upstream
+  if your changes are generally useful. See [Contributing](#-contributing).
 
 In every case the API is identical — `AddTelemetry(...)` works the same whether
 the type comes from a NuGet package or your own copy of the source.
@@ -135,10 +224,16 @@ builder.Services.AddTelemetry(builder.Configuration);
 }
 ```
 
-That's it — tracing, metrics and logging are exported via OTLP.
+### 3. Start a backend
 
-> You need an **OTLP-compatible backend** listening at `Endpoint`. No backend yet?
-> See [Running Locally with a Backend](#-running-locally-with-a-backend) for one-command setups.
+No backend yet? The .NET Aspire Dashboard is a single container:
+
+```bash
+docker run --rm -it -p 18888:18888 -p 4317:18889 -p 4318:18890 -e DOTNET_DASHBOARD_UNSECURED_ALLOW_ANONYMOUS=true mcr.microsoft.com/aspire/dashboard:latest
+```
+
+Run your app, then open <http://localhost:18888> — traces, metrics and logs
+appear as soon as the app handles its first request.
 
 ---
 
@@ -201,15 +296,6 @@ builder.Services.AddTelemetry(builder.Configuration, "MyTelemetry");
 builder.Services.AddTelemetry(builder.Configuration, o => { /* ... */ }, "MyTelemetry");
 ```
 
-```json
-{
-  "MyTelemetry": {
-    "Endpoint": "http://localhost:4318",
-    "ServiceName": "my-api"
-  }
-}
-```
-
 ---
 
 ## 🧩 Code Configuration
@@ -219,10 +305,10 @@ Configure entirely in code instead of `appsettings.json`:
 ```csharp
 builder.Services.AddTelemetry(o =>
 {
-    o.Endpoint        = new Uri("http://localhost:4318");
-    o.ServiceName     = "my-api";
+    o.Endpoint           = new Uri("http://localhost:4318");
+    o.ServiceName        = "my-api";
     o.ResourceAttributes = new() { ["deployment.environment"] = "production" };
-    o.SampleRatio     = 0.1;
+    o.SampleRatio        = 0.1;
 
     // Code-only: register additional instrumentation
     o.ConfigureTracing = tracing => tracing.AddSource("MyApp");
@@ -239,18 +325,15 @@ builder.Services.AddTelemetry(builder.Configuration, o =>
 {
     // Everything from appsettings.json is already bound here.
     o.ConfigureTracing = tracing => tracing.AddSource("MyApp");
-    o.ConfigureMetrics = metrics => metrics.AddMeter("MyApp");
-    o.ConfigureLogging = logging => logging.AddConsole();
 });
 ```
 
 ### Registering your own Sources & Meters
 
-The three `Configure*` callbacks are the extension points for **your own**
-telemetry. The built-in instrumentation (ASP.NET Core, `HttpClient`, .NET
-runtime) is wired up automatically; these hooks let you add the signals your
-application emits itself, plus anything that needs an extra NuGet package — such
-as [databases](#databases).
+The built-in instrumentation (ASP.NET Core, `HttpClient`, .NET runtime) is wired
+up automatically. The three `Configure*` callbacks are the extension points for
+the signals **your own** application emits, plus anything that needs an extra
+NuGet package — such as [databases](#databases).
 
 | Hook | Builder | Used to register |
 |---|---|---|
@@ -258,50 +341,38 @@ as [databases](#databases).
 | `ConfigureMetrics` | [`MeterProviderBuilder`](https://opentelemetry.io/docs/languages/net/instrumentation/#metrics) | **Meters** via `AddMeter("Name")` |
 | `ConfigureLogging` | [`ILoggingBuilder`](https://learn.microsoft.com/dotnet/api/microsoft.extensions.logging.iloggingbuilder) | extra logging providers, filters, etc. |
 
-**What is a Meter?**
-A [`Meter`](https://learn.microsoft.com/dotnet/api/system.diagnostics.metrics.meter)
-(from `System.Diagnostics.Metrics`) is the factory you create instruments
-(counters, histograms, gauges) from. Each `Meter` has a **name**, and OpenTelemetry
-only collects metrics from meters you have explicitly registered with
-`AddMeter("That.Name")`. Without that call, your custom metrics are never exported.
+**Custom metrics.** A [`Meter`](https://learn.microsoft.com/dotnet/api/system.diagnostics.metrics.meter)
+creates instruments (counters, histograms, gauges). OpenTelemetry only collects
+meters whose name you registered:
 
 ```csharp
-// 1. Create a Meter and an instrument somewhere in your app
 private static readonly Meter Meter = new("MyApp.Orders");
 private static readonly Counter<long> OrdersPlaced = Meter.CreateCounter<long>("orders.placed");
 
-// ... later
 OrdersPlaced.Add(1);
 
-// 2. Register the meter's name so it gets exported
 o.ConfigureMetrics = metrics => metrics.AddMeter("MyApp.Orders");
 ```
 
-**What is a Source?**
-An [`ActivitySource`](https://learn.microsoft.com/dotnet/api/system.diagnostics.activitysource)
-is the tracing equivalent: it creates `Activity` objects (= spans). Register its
-name with `AddSource("MyApp")` so your custom spans are sampled and exported.
+**Custom spans.** An [`ActivitySource`](https://learn.microsoft.com/dotnet/api/system.diagnostics.activitysource)
+is the tracing equivalent — it creates `Activity` objects (= spans):
 
 ```csharp
 private static readonly ActivitySource Activity = new("MyApp");
 
 using var span = Activity.StartActivity("ProcessOrder");
-// ... work being traced
 
 o.ConfigureTracing = tracing => tracing.AddSource("MyApp");
 ```
 
 > The string passed to `AddMeter`/`AddSource` must **exactly match** the name you
-> gave the `Meter`/`ActivitySource` — that name is how OpenTelemetry routes the
-> data.
+> gave the `Meter`/`ActivitySource`. Prefer config? `AdditionalMeters` and
+> `AdditionalTracingSources` do the same from `appsettings.json`.
 
 ### Databases
 
-Database instrumentation is **not** built in — it depends entirely on your
-driver, so it is added through the `ConfigureTracing` hook. This keeps the
-package free of database-specific dependencies; you only pull in what you use.
-
-There are two kinds of database instrumentation:
+Database instrumentation is **not** built in — it depends on your driver, so the
+package stays free of database-specific dependencies. There are two kinds:
 
 | Kind | Examples | How to enable |
 |---|---|---|
@@ -320,8 +391,7 @@ o.ConfigureTracing = t => t
     .AddSource("MySqlConnector");   // MySQL
 ```
 
-**No code for source-based drivers:** the second row of the table above needs no
-C# at all — `AdditionalTracingSources` does the same job from `appsettings.json`:
+Source-based drivers need no C# at all:
 
 ```json
 {
@@ -333,30 +403,17 @@ C# at all — `AdditionalTracingSources` does the same job from `appsettings.jso
 }
 ```
 
-> Package-based instrumentation (SQL Server, EF Core) still needs the one-line
-> `ConfigureTracing` call above, because it requires its NuGet package — a config
-> string alone can't pull in a dependency.
-
-**Toggling SQL instrumentation from `appsettings.json`**
-
-Because `EnableSqlClientInstrumentation` is not part of `TelemetryOptions` (the
-package is optional), you can add it as a custom key and read it in the callback:
-
-`appsettings.json`:
+**Toggling SQL instrumentation from `appsettings.json`.** Because the SqlClient
+package is optional, add a custom key and read it in the callback:
 
 ```json
 {
   "Telemetry": {
     "Endpoint": "http://localhost:4318",
-    "ServiceName": "my-api",
-    "RecordExceptions": true,
-
-    "EnableSqlClientInstrumentation": true   // custom key
+    "EnableSqlClientInstrumentation": true
   }
 }
 ```
-
-`Program.cs`:
 
 ```csharp
 builder.Services.AddTelemetry(builder.Configuration, opt =>
@@ -364,13 +421,10 @@ builder.Services.AddTelemetry(builder.Configuration, opt =>
     {
         if (builder.Configuration.GetValue<bool>("Telemetry:EnableSqlClientInstrumentation"))
         {
-            // NuGet: OpenTelemetry.Instrumentation.SqlClient
             tracing.AddSqlClientInstrumentation(sql => sql.RecordException = opt.RecordExceptions);
         }
     });
 ```
-
-This keeps the on/off switch in config while the package dependency stays explicit in code.
 
 ---
 
@@ -379,8 +433,8 @@ This keeps the on/off switch in config while the package dependency stays explic
 `AddTelemetry()` works with **any** `IServiceCollection` — ASP.NET Core, WPF,
 WinForms, console, MAUI/WinUI, UWP, worker services, etc.
 
-**With the Generic Host** (recommended for desktop/console — `Host.CreateApplicationBuilder()`),
-the providers start and flush automatically:
+**With the Generic Host** (recommended for desktop/console), the providers start
+and flush automatically:
 
 ```csharp
 var builder = Host.CreateApplicationBuilder(args);
@@ -389,8 +443,8 @@ using var host = builder.Build();
 await host.RunAsync();   // telemetry starts here and flushes on shutdown
 ```
 
-**Without a host** (e.g. a bare `ServiceCollection` in UWP or a minimal app),
-build the provider and **dispose it on exit** so buffered telemetry is flushed:
+**Without a host** (e.g. a bare `ServiceCollection`), build the provider and
+**dispose it on exit** so buffered telemetry is flushed:
 
 ```csharp
 var services = new ServiceCollection();
@@ -405,12 +459,6 @@ var provider = services.BuildServiceProvider();
 provider.Dispose();      // flushes traces, metrics and logs
 ```
 
-> ASP.NET Core instrumentation is in the `net8.0` and `net10.0` builds only —
-> which a desktop or console app targeting `net8.0`/`net10.0` (or their
-> `-windows` variants) does get. Only on the `netstandard2.0` build (.NET
-> Framework) is it absent, and setting `EnableAspNetCoreInstrumentation` there is
-> a harmless no-op. See [Requirements](#-requirements).
-
 ---
 
 ## 🧪 Samples
@@ -422,35 +470,26 @@ Two runnable samples live under [`src/`](./src):
 | **Web API** | [`…Sample.WebApi`](./src/OpenTelemetryExtension.Configuration.Sample.WebApi) | ASP.NET Core minimal API configured from `appsettings.json`, ready-to-run backend profiles, EF Core and opt-in SQL instrumentation. |
 | **WPF** | [`…Sample.Wpf`](./src/OpenTelemetryExtension.Configuration.Sample.Wpf) | Desktop app wiring `AddTelemetry()` through the **Generic Host**, emitting a custom `ActivitySource`/`Meter` and an `HttpClient` span on a button click. |
 
-The Web API sample drives the backend walkthrough below; the WPF sample exports
-to `http://localhost:4318` by default — point it at any of the backends here.
+The WPF sample exports to `http://localhost:4318` by default — point it at any
+of the backends below.
 
 ---
 
 ## 🔌 Running Locally with a Backend
 
-The [Web API sample](./src/OpenTelemetryExtension.Configuration.Sample.WebApi) ships
-ready-to-run configurations for several popular backends. Each backend has:
+The [Web API sample](./src/OpenTelemetryExtension.Configuration.Sample.WebApi)
+ships a start script (Docker Compose or Helm) in [`infrastructure/`](./infrastructure)
+and a matching launch profile for each backend:
 
-1. an **infrastructure start script** (Docker Compose or Helm) in [`infrastructure/`](./infrastructure),
-2. a **launch profile** that selects the matching `appsettings.<env>.json`,
-3. a **UI** where the exported traces, metrics and logs show up.
-
-### Steps
-
-1. **Start the backend infrastructure** — run the script for your backend (see table).
-   - Docker scripts live in [`infrastructure/docker`](./infrastructure/docker) and need Docker.
-   - Helm scripts live in [`infrastructure/helm`](./infrastructure/helm) and need a local Kubernetes cluster (e.g. k3s in WSL2).
+1. **Start the backend** — run the script from the table. Docker scripts need
+   Docker; Helm scripts need a local Kubernetes cluster (e.g. k3s in WSL2).
 2. **Run the sample** with the matching profile:
    ```bash
    cd src/OpenTelemetryExtension.Configuration.Sample.WebApi
    dotnet run --launch-profile "Start Aspire"
    ```
-   Or pick the profile from the run dropdown in Visual Studio / Rider.
-3. **Generate traffic** — the app opens Swagger at `https://localhost:5073/swagger`; call an endpoint.
-4. **Open the backend UI** (see table) to inspect the telemetry.
-
-### Backend overview
+3. **Generate traffic** — Swagger opens at `https://localhost:5073/swagger`; call an endpoint.
+4. **Open the backend UI** and explore the telemetry.
 
 | Backend | Start infrastructure | Launch profile | Backend UI |
 |---|---|---|---|
@@ -461,14 +500,7 @@ ready-to-run configurations for several popular backends. Each backend has:
 | Grafana / Loki | `docker/docker-install-loki.cmd` | `Start Loki` | <http://localhost:3000> (`admin`/`admin`) |
 | OpenSearch Dashboards | `docker/docker-install-opensearch.cmd` | `Start OpenSearch` | <http://localhost:5601> |
 
-*(Paths are relative to [`infrastructure/`](./infrastructure). The first three are
-documented in full below; the rest work the same way — start the script, pick the
-profile.)*
-
-> **Tip — viewing logs in the Aspire Dashboard:** after starting the app with the
-> `Start Aspire` profile, open <http://localhost:31888>, then go to the
-> **Structured** (logs), **Traces** or **Metrics** tab. Data appears as soon as
-> you hit a Swagger endpoint.
+*(Paths are relative to [`infrastructure/`](./infrastructure).)*
 
 ### Sample backend configurations
 
@@ -478,6 +510,8 @@ These are the exact `appsettings.<env>.json` files used by the sample's launch p
 
 The dashboard requires an API key on the OTLP endpoint (`x-otlp-api-key`). The
 gRPC endpoint is exposed on NodePort `31889` (Helm) or host port `31889` (Docker).
+Open <http://localhost:31888> and use the **Structured**, **Traces** or
+**Metrics** tab.
 
 ```json
 {
@@ -488,10 +522,6 @@ gRPC endpoint is exposed on NodePort `31889` (Helm) or host port `31889` (Docker
   }
 }
 ```
-
-Traces, metrics and logs from the sample app shown live in the Aspire Dashboard UI:
-
-![Aspire Dashboard demo](https://raw.githubusercontent.com/thorstenalpers/OpenTelemetryExtension.Configuration/main/assets/Aspire-Dashboard.webp)
 
 #### Jaeger — `appsettings.jaeger.json`
 
@@ -504,9 +534,7 @@ Traces, metrics and logs from the sample app shown live in the Aspire Dashboard 
 }
 ```
 
-Traces from the sample app shown in the Jaeger UI:
-
-![Jaeger demo](https://raw.githubusercontent.com/thorstenalpers/OpenTelemetryExtension.Configuration/main/assets/Jaeger.webp)
+![Traces from the sample app in the Jaeger UI](https://raw.githubusercontent.com/thorstenalpers/OpenTelemetryExtension.Configuration/main/assets/Jaeger.webp)
 
 #### OpenObserve — HTTP/protobuf — `appsettings.openobserve-http.json`
 
@@ -520,9 +548,34 @@ Traces from the sample app shown in the Jaeger UI:
 }
 ```
 
-The same telemetry explored in the OpenObserve UI:
+![Telemetry from the sample app in the OpenObserve UI](https://raw.githubusercontent.com/thorstenalpers/OpenTelemetryExtension.Configuration/main/assets/OpenObserve.webp)
 
-![OpenObserve demo](https://raw.githubusercontent.com/thorstenalpers/OpenTelemetryExtension.Configuration/main/assets/OpenObserve.webp)
+---
+
+## ❓ FAQ
+
+**Does it hide OpenTelemetry from me?**
+No. It calls the official OpenTelemetry .NET SDK and exposes the underlying
+builders through `ConfigureTracing`, `ConfigureMetrics` and `ConfigureLogging`.
+Anything the SDK can do, you can still do.
+
+**How do I turn telemetry off in tests or locally?**
+Set `"Enabled": false` (or the environment variable `Telemetry__Enabled=false`).
+Nothing is registered and no endpoint is required.
+
+**Does it work with .NET Framework?**
+Yes, through the `netstandard2.0` build (.NET Framework 4.6.1+). Only the ASP.NET
+Core instrumentation is absent there. See [Requirements](#-requirements).
+
+**Can I use it with .NET Aspire?**
+Yes. Point `Endpoint` at the Aspire Dashboard's OTLP endpoint, or use it in
+projects that are not part of an Aspire AppHost but should report to the same
+dashboard.
+
+**Why is my custom metric or span missing?**
+Its `Meter`/`ActivitySource` name is not registered. Add it to
+`AdditionalMeters`/`AdditionalTracingSources` or call `AddMeter`/`AddSource` —
+the names must match exactly.
 
 ---
 
@@ -530,33 +583,39 @@ The same telemetry explored in the OpenObserve UI:
 
 Contributions are welcome — bug fixes, new instrumentation options, documentation
 improvements and ideas alike. For anything beyond a small fix, please open an
-issue first so we can agree on the approach before you invest time in a pull
-request.
+issue first so we can agree on the approach.
 
-The basic workflow is: fork the repo, branch off `main` (`feature/<name>` or
-`fix/<name>`), make your change, add or update tests for any public API change,
-run the unit tests, and open a PR against `main`. Build and test locally with:
+Fork the repo, branch off `main` (`feature/<name>` or `fix/<name>`), add or update
+tests for any public API change, and open a PR against `main`:
 
 ```bash
 dotnet build OpenTelemetryExtension.slnx -c Release
 dotnet test  src/OpenTelemetryExtension.Configuration.Tests -c Release
 ```
 
-Full details — code style, the integration-test stack, and the release process —
-are in [CONTRIBUTING.md](./CONTRIBUTING.md). Note that versioning and release
-notes are handled separately at release time, so you don't need to touch them in
-a feature PR.
+Full details — code style, the integration-test stack and the release process —
+are in [CONTRIBUTING.md](./CONTRIBUTING.md). Versioning and release notes are
+handled at release time, so you don't need to touch them in a feature PR.
+
+If this package saves you time, a ⭐ on
+[GitHub](https://github.com/thorstenalpers/OpenTelemetryExtension.Configuration)
+helps others find it.
 
 ---
 
 ## 🐛 Report a Bug
 
-Found something broken or behaving unexpectedly? Please
-[open an issue](https://github.com/thorstenalpers/OpenTelemetryExtension.Configuration/issues/new/choose).
-To help reproduce it quickly, include the package version, your target framework
-(e.g. `net10.0` or `netstandard2.0`), the relevant `Telemetry` configuration, the
-OTLP backend you export to, and what you expected to happen versus what actually
-did. A minimal repro or stack trace speeds things up a lot.
+Found something broken? Please
+[open an issue](https://github.com/thorstenalpers/OpenTelemetryExtension.Configuration/issues/new/choose)
+and include the package version, your target framework, the relevant `Telemetry`
+configuration, the OTLP backend you export to, and what you expected versus what
+happened. A minimal repro or stack trace speeds things up a lot.
 
 For security-sensitive reports, please follow [SECURITY.md](./SECURITY.md)
 instead of opening a public issue.
+
+---
+
+## 📄 License
+
+Released under the [MIT License](./LICENSE).
